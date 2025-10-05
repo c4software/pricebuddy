@@ -17,8 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule) {
         // Check for new prices
-        $schedule->command(FetchAll::COMMAND, ['--log'])
-            ->dailyAt(SettingsHelper::getSetting('scrape_schedule_time', '06:00'));
+        $schedule->command(FetchAll::COMMAND, ['--log'])->everyTwoHours();
         // Prune old log messages
         $schedule->command('model:prune', ['--model' => [LogMessage::class]])->daily();
         // Prune search research results.
