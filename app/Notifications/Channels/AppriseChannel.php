@@ -27,14 +27,26 @@ class AppriseChannel
             return;
         }
 
-        $response = self::sendRequest(
-            $this->getUrl($notifiable),
+        $settings = self::getSettings($notifiable);
+        $isLocal = isset($settings['token']) && $settings['token'] === 'local';
+        $targetUrl = $settings['url'];
+        $tag = $settings['tags'] ?? 'all';
+
+        $result = self::sendRequest(
+            $targetUrl,
             $message->title,
             $message->content,
-            $message->content
+            $tag,
+            $isLocal
         );
 
-        $response->throw();
+        if ($isLocal) {
+            if ($result['success'] === false) {
+                throw new \RuntimeException('Erreur lors de l\'envoi de la notification locale Apprise : ' . $result['output']);
+            }
+        } else {
+            $result->throw();
+        }
     }
 
     /**
@@ -64,9 +76,25 @@ class AppriseChannel
         return rtrim($apiUrl, '/').'/notify/'.$token;
     }
 
-    public static function sendRequest(string $apiUrl, string $title, string $message, string $url, string $tag = 'all'): Response
+    public static function sendRequest(string $targetUrl, string $title, string $message, string $tag = 'all', bool $isLocal = false)
     {
-        return Http::post($apiUrl, [
+        if ($isLocal) {
+            // Utilisation du binaire local apprise
+            $cmd = sprintf(
+                'apprise %s -t %s -b %s -g %s',
+                escapeshellarg($targetUrl),
+                escapeshellarg($title),
+                escapeshellarg($message),
+                escapeshellarg($tag)
+            );
+            exec($cmd . ' 2>&1', $output, $returnVar);
+            return [
+                'success' => $returnVar === 0,
+                'output' => implode("\n", $output),
+            ];
+        }
+        // Appel HTTP classique
+        return Http::post($targetUrl, [
             'title' => $title,
             'body' => $message,
             'tags' => $tag,

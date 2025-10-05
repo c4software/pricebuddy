@@ -35,6 +35,9 @@ COPY ../../docker/php/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY ../../docker/php/start-app.sh /start-app.sh
 COPY ../../docker/php/start-cron.sh /start-cron.sh
 
+# Install Apprise for notifications
+RUN apt update && apt install -y apprise
+
 RUN rm -rf /var/www/html \
     && ln -s /app/public /var/www/html \
     && a2enmod rewrite \
