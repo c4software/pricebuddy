@@ -204,16 +204,12 @@ class AppSettingsPage extends SettingsPage
                 TextInput::make('url')
                     ->label('Apprise service URL')
                     ->placeholder('Example : tgram://bottoken/ChatID')
+                    ->helperText('You can use any of the [supported services](https://github.com/caronc/apprise) with Apprise. Just enter the full URL here.')
                     ->suffixAction(
                         TestAppriseAction::make()
                             ->setSettings(fn () => data_get($this->form->getState(), 'notification_services.apprise', [])),
                     )
                     ->required(),
-
-                MarkdownEditor::make('info')
-                    ->label('Info')
-                    ->default('You can use any of the [supported services](https://github.com/caronc/apprise) with Apprise. Just enter the full URL here.')
-                    ->columnSpan('full')
             ],
             __('Push notifications via Apprise')
         );
