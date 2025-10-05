@@ -64,10 +64,8 @@ class TestAppriseAction extends Action
                 'This is a test notification from PriceBuddy',
                 url('/')
             );
-
-            $response->throw();
             $this->success();
-        } catch (RequestException|Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Failed to send test notification')
                 ->body('Error: '.$e->getMessage())
