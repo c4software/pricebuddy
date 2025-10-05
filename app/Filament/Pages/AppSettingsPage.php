@@ -14,6 +14,7 @@ use App\Services\Helpers\LocaleHelper;
 use App\Services\SearchService;
 use App\Settings\AppSettings;
 use Filament\Forms;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -208,6 +209,11 @@ class AppSettingsPage extends SettingsPage
                             ->setSettings(fn () => data_get($this->form->getState(), 'notification_services.apprise', [])),
                     )
                     ->required(),
+
+                MarkdownEditor::make('info')
+                    ->label('Info')
+                    ->default('You can use any of the [supported services](https://github.com/caronc/apprise) with Apprise. Just enter the full URL here.')
+                    ->columnSpan('full')
             ],
             __('Push notifications via Apprise')
         );

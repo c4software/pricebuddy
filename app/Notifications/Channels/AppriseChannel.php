@@ -49,7 +49,7 @@ class AppriseChannel
     {
         $settings = self::getSettings($notifiable);
 
-        return self::makeUrl($settings['url'], $settings['token']);
+        return self::makeUrl($settings['url']);
     }
 
     public static function getSettings($notifiable): array
@@ -57,14 +57,13 @@ class AppriseChannel
         $settings = NotificationsHelper::getSettings(NotificationMethods::Apprise);
         $userSettings = $notifiable->getNotificationSettings(NotificationMethods::Apprise);
         $settings['tags'] = empty($userSettings['tags']) ? 'all' : $userSettings['tags'];
-        $settings['token'] = empty($userSettings['token']) ? ($settings['token'] ?? '') : $userSettings['token'];
 
         return $settings;
     }
 
-    public static function makeUrl(string $apiUrl, string $token): string
+    public static function makeUrl(string $apiUrl): string
     {
-        return rtrim($apiUrl, '/').'/notify/'.$token;
+        return rtrim($apiUrl, '/');
     }
 
     public static function sendRequest(string $targetUrl, string $title, string $message, string $tag = 'all')

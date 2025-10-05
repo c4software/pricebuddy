@@ -46,9 +46,8 @@ class TestAppriseAction extends Action
     {
         $settings = call_user_func($this->settingsCallback);
         $baseUrl = data_get($settings, 'url');
-        $token = data_get($settings, 'token');
 
-        if (empty($baseUrl) || empty($token)) {
+        if (empty($baseUrl)) {
             Notification::make()
                 ->title('Error')
                 ->body('Please save your Apprise settings first')
@@ -60,7 +59,7 @@ class TestAppriseAction extends Action
 
         try {
             $response = AppriseChannel::sendRequest(
-                AppriseChannel::makeUrl($baseUrl, $token),
+                AppriseChannel::makeUrl($baseUrl),
                 'Test PriceBuddy notification',
                 'This is a test notification from PriceBuddy',
                 url('/')
