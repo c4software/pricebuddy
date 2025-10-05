@@ -201,16 +201,13 @@ class AppSettingsPage extends SettingsPage
             NotificationMethods::Apprise->value,
             [
                 TextInput::make('url')
-                    ->label('Apprise API server URL')
-                    ->placeholder('https://apprise.example.com')
-                    ->required(),
-                TextInput::make('token')
-                    ->label('Configuration token')
-                    ->required()
+                    ->label('Apprise service URL')
+                    ->placeholder('Example : tgram://bottoken/ChatID')
                     ->suffixAction(
                         TestAppriseAction::make()
                             ->setSettings(fn () => data_get($this->form->getState(), 'notification_services.apprise', [])),
-                    ),
+                    )
+                    ->required(),
             ],
             __('Push notifications via Apprise')
         );

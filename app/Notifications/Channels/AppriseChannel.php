@@ -6,9 +6,7 @@ use App\Enums\NotificationMethods;
 use App\Models\User;
 use App\Notifications\Messages\GenericNotificationMessage;
 use App\Services\Helpers\NotificationsHelper;
-use Illuminate\Http\Client\Response;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Http;
 
 class AppriseChannel
 {
@@ -28,24 +26,17 @@ class AppriseChannel
         }
 
         $settings = self::getSettings($notifiable);
-        $isLocal = isset($settings['token']) && $settings['token'] === 'local';
-        $targetUrl = $settings['url'];
         $tag = $settings['tags'] ?? 'all';
 
         $result = self::sendRequest(
-            $targetUrl,
+            $settings['url'],
             $message->title,
             $message->content,
-            $tag,
-            $isLocal
+            $tag
         );
 
-        if ($isLocal) {
-            if ($result['success'] === false) {
-                throw new \RuntimeException('Erreur lors de l\'envoi de la notification locale Apprise : ' . $result['output']);
-            }
-        } else {
-            $result->throw();
+        if ($result['success'] === false) {
+            throw new \RuntimeException('Erreur lors de l\'envoi de la notification locale Apprise : ' . $result['output']);
         }
     }
 
@@ -76,28 +67,20 @@ class AppriseChannel
         return rtrim($apiUrl, '/').'/notify/'.$token;
     }
 
-    public static function sendRequest(string $targetUrl, string $title, string $message, string $tag = 'all', bool $isLocal = false)
+    public static function sendRequest(string $targetUrl, string $title, string $message, string $tag = 'all')
     {
-        if ($isLocal) {
-            // Utilisation du binaire local apprise
-            $cmd = sprintf(
-                'apprise %s -t %s -b %s -g %s',
-                escapeshellarg($targetUrl),
-                escapeshellarg($title),
-                escapeshellarg($message),
-                escapeshellarg($tag)
-            );
-            exec($cmd . ' 2>&1', $output, $returnVar);
-            return [
-                'success' => $returnVar === 0,
-                'output' => implode("\n", $output),
-            ];
-        }
-        // Appel HTTP classique
-        return Http::post($targetUrl, [
-            'title' => $title,
-            'body' => $message,
-            'tags' => $tag,
-        ]);
+        // Utilisation du binaire local apprise uniquement
+        $cmd = sprintf(
+            'apprise %s -t %s -b %s -g %s',
+            escapeshellarg($targetUrl),
+            escapeshellarg($title),
+            escapeshellarg($message),
+            escapeshellarg($tag)
+        );
+        exec($cmd . ' 2>&1', $output, $returnVar);
+        return [
+            'success' => $returnVar === 0,
+            'output' => implode("\n", $output),
+        ];
     }
 }
