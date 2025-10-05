@@ -181,6 +181,12 @@ class Url extends Model
 
     public function updatePrice(int|float|string|null $price = null): Price|Model|null
     {
+        logger()->info("Updating price for URL: '{$this->url}'", [
+            'url_id' => $this->id,
+            'store_id' => $this->store_id,
+            'provided_price' => $price,
+        ]);
+
         if (! $this->store_id) {
             return null;
         }

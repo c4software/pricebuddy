@@ -101,7 +101,7 @@ class StoreResource extends Resource
                 Section::make('Locale')
                     ->description(__('Override region and locale settings for this store'))
                     ->columns(2)
-                    ->schema(AppSettingsPage::getLocaleFormFields('settings.locale_settings')),
+                    ->schema(AppSettingsPage::getLocaleFormFields('settings.locale_settings', false)),
 
                 Forms\Components\Section::make('Notes')->schema([
                     Forms\Components\RichEditor::make('notes')

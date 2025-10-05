@@ -58,24 +58,41 @@ class CurrencyHelper
 
     public static function toFloat(mixed $value, ?string $locale = null, ?string $iso = null): float
     {
-        $iso = $iso ?? self::getCurrency();
-        $locale = $locale ?? self::getLocale();
-
         try {
-            $value = (string) preg_replace('/[^\d\.\,]/', '', (string) $value);
+            $cleaned = preg_replace('/[^0-9,.-]/', '', trim($value));
 
-            $currencies = new ISOCurrencies;
-            $numberFormatter = new NumberFormatter($locale, NumberFormatter::DECIMAL);
-            $moneyParser = new IntlLocalizedDecimalParser($numberFormatter, $currencies);
-            $moneyFormatter = new DecimalMoneyFormatter($currencies);
+            $lastComma = strrpos($cleaned, ',');
+            $lastDot = strrpos($cleaned, '.');
 
-            $money = $moneyParser->parse($value, new Currency($iso));
+            if ($lastComma !== false && $lastDot !== false) {
+                if ($lastComma > $lastDot) {
+                    $cleaned = str_replace('.', '', $cleaned);
+                    $cleaned = str_replace(',', '.', $cleaned);
+                } else {
+                    $cleaned = str_replace(',', '', $cleaned);
+                }
+            } elseif ($lastComma !== false) {
+                $parts = explode(',', $cleaned);
+                $lastPart = end($parts);
 
-            return (float) $moneyFormatter->format($money);
-        } catch (Exception|ParserException $e) {
+                if (strlen($lastPart) == 2) {
+                    $cleaned = str_replace(',', '.', $cleaned);
+                } else {
+                    $cleaned = str_replace(',', '', $cleaned);
+                }
+            }
+
+            return (float)$cleaned;
+        } catch (Exception $e) {
+            Logger()->error('Currency to float conversion error: ' . $e->getMessage(), [
+                'value' => $value,
+                'exception' => $e,
+            ]);
+
             return 0.0;
         }
     }
+
 
     public static function toString(mixed $value, int $maxPrecision = 2, ?string $locale = null, ?string $iso = null): string
     {

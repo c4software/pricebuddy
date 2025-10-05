@@ -267,7 +267,7 @@ class AppSettingsPage extends SettingsPage
         );
     }
 
-    public static function getLocaleFormFields(string $settingsKey): array
+    public static function getLocaleFormFields(string $settingsKey, bool $required = true): array
     {
         return [
             Select::make($settingsKey.'.locale')
@@ -275,14 +275,14 @@ class AppSettingsPage extends SettingsPage
                 ->searchable()
                 ->options(LocaleHelper::getAllLocalesAsOptions())
                 ->hintIcon(Icons::Help->value, 'Primarily used when extracting and displaying prices. Help translate this app on GitHub')
-                ->required()
+                ->required($required)
                 ->default(CurrencyHelper::getLocale()),
             Select::make($settingsKey.'.currency')
                 ->label('Currency')
                 ->searchable()
                 ->options(LocaleHelper::getAllCurrencyLocalesAsOptions())
                 ->hintIcon(Icons::Help->value, 'Default currency for extracting and displaying prices')
-                ->required()
+                ->required($required)
                 ->default(CurrencyHelper::getCurrency()),
         ];
     }
