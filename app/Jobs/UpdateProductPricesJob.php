@@ -35,6 +35,7 @@ class UpdateProductPricesJob implements ShouldQueue
             $method = $successful ? 'info' : 'warning';
             logger()->{$method}("$prefix price fetch for product: '{$this->product->title}'", [
                 'product_id' => $this->product->id,
+                'price' => $this->product->prices()->latest('id')->first(),
             ]);
         }
 
