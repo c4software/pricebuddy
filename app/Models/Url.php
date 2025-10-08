@@ -220,7 +220,7 @@ class Url extends Model
                     'last_date' => $lastDate,
                 ]);
 
-                return null;
+                return $lastPrice;
             }
         }
 
