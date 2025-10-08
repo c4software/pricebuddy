@@ -76,35 +76,35 @@ class Url extends Model
     public function productNameShort(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->product->title_short ?? 'Unknown'
+            get: fn() => $this->product->title_short ?? 'Unknown'
         );
     }
 
     public function storeName(): Attribute
     {
         return Attribute::make(
-            get: fn () => Str::limit(($this->store->name ?? 'Missing store'), 100)
+            get: fn() => Str::limit(($this->store->name ?? 'Missing store'), 100)
         );
     }
 
     protected function buyUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => AffiliateHelper::new()->parseUrl($this->url)
+            get: fn() => AffiliateHelper::new()->parseUrl($this->url)
         );
     }
 
     protected function productUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->product?->action_urls['view'] ?? '/'
+            get: fn() => $this->product?->action_urls['view'] ?? '/'
         );
     }
 
     protected function latestPriceFormatted(): Attribute
     {
         return Attribute::make(
-            get: fn () => CurrencyHelper::toString(
+            get: fn() => CurrencyHelper::toString(
                 $this->latestPrice()->first()->price ?? 0,
                 locale: $this->store?->locale,
                 iso: $this->store?->currency
@@ -199,8 +199,33 @@ class Url extends Model
             return null;
         }
 
+        // Only create a new price entry if the price changed OR the date is different
+        $priceFloat = CurrencyHelper::toFloat($price, locale: $this->store?->locale, iso: $this->store?->currency);
+
+        /** @var ?Price $lastPrice */
+        $lastPrice = $this->prices()->latest('created_at')->first();
+
+        if ($lastPrice) {
+            $lastPriceValue = round((float) $lastPrice->price, 2);
+            $currentValue = round($priceFloat, 2);
+            $lastDate = $lastPrice->created_at?->toDateString();
+            $today = now()->toDateString();
+
+            if ($currentValue === $lastPriceValue && $lastDate === $today) {
+                logger()->info("Skipping creating price for URL because value and date unchanged", [
+                    'url_id' => $this->id,
+                    'store_id' => $this->store_id,
+                    'price' => $currentValue,
+                    'last_price' => $lastPriceValue,
+                    'last_date' => $lastDate,
+                ]);
+
+                return null;
+            }
+        }
+
         return $this->prices()->create([
-            'price' => CurrencyHelper::toFloat($price, locale: $this->store?->locale, iso: $this->store?->currency),
+            'price' => $priceFloat,
             'store_id' => $this->store_id,
         ]);
     }
