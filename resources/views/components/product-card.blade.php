@@ -13,7 +13,7 @@ $latestPrice = $product->getPriceCache()->first();
     x-data="{ expanded: false }">
     <div class="flex">
         <div
-            class="flex-1 bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 rounded-b-xl overflow-hidden p-[1px]"
+            class="flex-1 bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 rounded-b-xl overflow-hidden"
             :class="expanded ? 'rounded-bl-none' : ''">
             <a class="flex gap-2" href="{{ $product->view_url }}">
                 <div class="w-20 h-20 min-w-20 m-2 rounded-md overflow-hidden p-1 flex items-center">
@@ -41,7 +41,7 @@ $latestPrice = $product->getPriceCache()->first();
                 </div>
             </a>
 
-            <div class="bg-custom-400/10 hover:bg-custom-400/20">
+            <div class="bg-custom-400/10 hover:bg-custom-400/20 pb-0.5">
                 <x-range-chart :product="$product" height="40px" />
             </div>
 
