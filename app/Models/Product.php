@@ -495,8 +495,8 @@ class Product extends Model
     {
         $priceValue = (float) $price->price;
 
-        // Check if price is different to current price.
-        if (! empty($this->notify_price) && $priceValue != (float) $this->notify_price) {
+        // Check if price is less than notify price.
+        if (! empty($this->notify_price) && $priceValue <= (float) $this->notify_price) {
             return true;
         }
 
