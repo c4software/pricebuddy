@@ -205,10 +205,10 @@ class Product extends Model
     public function priceAggregates(): Attribute
     {
         return Attribute::make(
-            get: fn (): Collection => collect(['max', 'avg', 'min'])
-                ->mapWithKeys(fn ($method) => [$method => $this->getPriceCacheAggregate($method)])
-                ->filter(fn ($value) => $value > 0)
-                ->mapWithKeys(fn ($value, $method) => [$method => CurrencyHelper::toString($value)])
+            get: fn(): Collection => collect(['max', 'avg', 'min'])
+                ->mapWithKeys(fn($method) => [$method => $this->getPriceCacheAggregate($method)])
+                ->filter(fn($value) => $value > 0)
+                ->mapWithKeys(fn($value, $method) => [$method => CurrencyHelper::toString($value)])
         );
     }
 
@@ -228,7 +228,7 @@ class Product extends Model
     public function titleShort(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->title(20)
+            get: fn() => $this->title(20)
         );
     }
 
@@ -238,7 +238,7 @@ class Product extends Model
     public function urlsArray(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->urls->pluck('url')->toArray()
+            get: fn() => $this->urls->pluck('url')->toArray()
         );
     }
 
@@ -248,7 +248,7 @@ class Product extends Model
     public function ignoredSearchUrls(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => collect($this->ignored_urls)->merge($this->urls_array)->unique()->values()->toArray()
+            get: fn($value) => collect($this->ignored_urls)->merge($this->urls_array)->unique()->values()->toArray()
         );
     }
 
@@ -258,8 +258,8 @@ class Product extends Model
     public function isLastScrapeSuccessful(): Attribute
     {
         return Attribute::make(
-            get: fn ($value): bool => $this->getPriceCache()
-                ->filter(fn (PriceCacheDto $price) => $price->isLastScrapeSuccessful())
+            get: fn($value): bool => $this->getPriceCache()
+                ->filter(fn(PriceCacheDto $price) => $price->isLastScrapeSuccessful())
                 ->count() === $this->getPriceCache()->count()
         );
     }
@@ -270,7 +270,7 @@ class Product extends Model
     public function isNotifiedPrice(): Attribute
     {
         return Attribute::make(
-            get: fn ($value): bool => $this->shouldNotifyOnPrice(new Price(['price' => $this->current_price]))
+            get: fn($value): bool => $this->shouldNotifyOnPrice(new Price(['price' => $this->current_price]))
         );
     }
 
@@ -289,9 +289,9 @@ class Product extends Model
     {
         return $this->getKey()
             ? [
-                'edit' => route(BaseAction::ROUTE_NAMESPACE.'products.edit', $this, false),
-                'view' => route(BaseAction::ROUTE_NAMESPACE.'products.view', $this, false),
-                'fetch' => route(BaseAction::ROUTE_NAMESPACE.'products.fetch', $this, false),
+                'edit' => route(BaseAction::ROUTE_NAMESPACE . 'products.edit', $this, false),
+                'view' => route(BaseAction::ROUTE_NAMESPACE . 'products.view', $this, false),
+                'fetch' => route(BaseAction::ROUTE_NAMESPACE . 'products.fetch', $this, false),
             ]
             : [];
     }
@@ -309,7 +309,7 @@ class Product extends Model
     {
         return collect($this->price_cache)
             ->sortBy('price')
-            ->map(fn ($price) => PriceCacheDto::fromArray($price))
+            ->map(fn($price) => PriceCacheDto::fromArray($price))
             ->values();
     }
 
@@ -321,10 +321,10 @@ class Product extends Model
         $cache = $this->getPriceCache();
 
         if ($urlId) {
-            $cache->filter(fn (PriceCacheDto $price) => $price->getUrlId() === $urlId);
+            $cache->filter(fn(PriceCacheDto $price) => $price->getUrlId() === $urlId);
         }
 
-        return round($cache->map(fn (PriceCacheDto $price) => $price->getHistory()->values()->toArray())
+        return round($cache->map(fn(PriceCacheDto $price) => $price->getHistory()->values()->toArray())
             ->flatten()
             ->{$method}(), 2);
     }
@@ -424,7 +424,7 @@ class Product extends Model
     public function updatePrices(): bool
     {
         $successful = $this->urls
-            ->map(fn (Url $url) => $url->updatePrice())
+            ->map(fn(Url $url) => $url->updatePrice())
             ->filter();
 
         $this->updatePriceCache();
@@ -456,7 +456,7 @@ class Product extends Model
                 // All price entries for the store.
                 $storeHistory = $prices->sortBy('created_at')
                     ->groupBy('created_at')
-                    ->mapWithKeys(fn ($prices, string $date) => [
+                    ->mapWithKeys(fn($prices, string $date) => [
                         Carbon::parse($date)->toDateString() => $prices->pluck('price')->min(),
                     ]);
 
@@ -486,7 +486,7 @@ class Product extends Model
     public function getPriceHistoryCached(): Collection
     {
         return $this->getPriceCache()
-            ->mapWithKeys(fn (PriceCacheDto $price) => [
+            ->mapWithKeys(fn(PriceCacheDto $price) => [
                 $price->getUrlId() => $price->getHistory(),
             ]);
     }
@@ -495,8 +495,8 @@ class Product extends Model
     {
         $priceValue = (float) $price->price;
 
-        // Check if price is less than notify price.
-        if (! empty($this->notify_price) && $priceValue <= (float) $this->notify_price) {
+        // Check if price is different to current price.
+        if (! empty($this->notify_price) && $priceValue != (float) $this->notify_price) {
             return true;
         }
 

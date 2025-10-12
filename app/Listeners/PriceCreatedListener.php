@@ -24,13 +24,13 @@ class PriceCreatedListener
 
         try {
             // Notify the user if the price is within the range.
-            if ($product->shouldNotifyOnPrice($event->price) && $url->shouldNotifyOnPrice($event->price)) {
+            if ($product->shouldNotifyOnPrice($event->price)) {
                 $product->user?->notify(new PriceAlertNotification($url));
                 $event->price->update(['notified' => true]);
             }
         } catch (Exception $e) {
             // Log the error.
-            logger()->error('Error sending price alert notification: '.$e->getMessage(), [
+            logger()->error('Error sending price alert notification: ' . $e->getMessage(), [
                 'product' => $product->title,
                 'product_id' => $product->getKey(),
                 'url' => $event->price->url,
