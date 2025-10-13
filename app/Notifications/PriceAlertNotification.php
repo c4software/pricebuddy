@@ -124,7 +124,10 @@ class PriceAlertNotification extends Notification
         $avg = data_get($this->product?->price_aggregates, 'avg', null);
         $max = data_get($this->product?->price_aggregates, 'max', null);
 
-        return $this->url->store_name . ' price changed to ' . $this->url->latest_price_formatted . '. ' .
+        // If one price so say "Tracking new price" else "Price changed to"
+        $text = $this->url->prices()->count() <= 1 ? 'Tracking new price ' : 'Price changed to ';
+
+        return $text . $this->url->latest_price_formatted . '. ' .
             ($min ? 'Min: ' . $min . '. ' : '') .
             ($avg ? 'Avg: ' . $avg . '. ' : '') .
             ($max ? 'Max: ' . $max . '. ' : '')  .
