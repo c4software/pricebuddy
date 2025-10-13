@@ -53,9 +53,6 @@ class UserResource extends Resource
                             ->required(fn (string $context): bool => $context === 'create'),
                     ]),
                 self::makeFormHeading('Notification Settings'),
-                self::getEmailSettings(),
-                self::getPushoverSettings(),
-                self::getGotifySettings(),
                 self::getAppriseSettings(),
             ]);
     }

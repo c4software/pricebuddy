@@ -102,14 +102,9 @@ class AppSettingsPage extends SettingsPage
                     ]),
 
                 self::makeFormHeading('Notifications'),
-
-                $this->getEmailSettings(),
-                $this->getPushoverSettings(),
-                $this->getGotifySettings(),
                 $this->getAppriseSettings(),
 
                 self::makeFormHeading('Integrations'),
-
                 $this->getSearXngSettings(),
             ]);
     }

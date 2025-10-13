@@ -123,23 +123,7 @@ class ProductResource extends Resource
                     ->default(true),
             ])
                 ->columns(2)
-                ->description('Product info'),
-
-            Forms\Components\Section::make('Notifications')->schema([
-                TextInput::make('notify_price')
-                    ->nullable()
-                    ->suffix(CurrencyHelper::getSymbol())
-                    ->hintIcon(Icons::Help->value, 'Get notified when price is equal or less than this value')
-                    ->numeric(),
-
-                TextInput::make('notify_percent')
-                    ->nullable()
-                    ->hintIcon(Icons::Help->value, 'Get notified when price drops below specified percentage')
-                    ->suffix('%')
-                    ->numeric(),
-            ])
-                ->columns(2)
-                ->description('Notification settings'),
+                ->description('Product info')
         ];
     }
 
