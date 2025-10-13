@@ -115,7 +115,7 @@ class PriceAlertNotification extends Notification
 
     protected function getTitle(): string
     {
-        return 'Price change for : ' . $this->url->product_name_short;
+        return $this->url->product_name;
     }
 
     protected function getSummary(): string

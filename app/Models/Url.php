@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  *
  * @property ?string $url
  * @property string $product_name_short
+ * @property string $product_name
  * @property string $store_name
  * @property string $buy_url
  * @property string $product_url
@@ -77,6 +78,13 @@ class Url extends Model
     {
         return Attribute::make(
             get: fn() => $this->product->title_short ?? 'Unknown'
+        );
+    }
+
+    public function productName(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->product->title ?? 'Unknown product'
         );
     }
 
