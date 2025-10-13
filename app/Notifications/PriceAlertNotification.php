@@ -115,13 +115,21 @@ class PriceAlertNotification extends Notification
 
     protected function getTitle(): string
     {
-        return 'Price drop: ' . $this->url->product_name_short . ' (' . $this->url->latest_price_formatted . ')';
+        return 'Price change for : ' . $this->url->product_name_short;
     }
 
     protected function getSummary(): string
     {
-        return $this->url->store_name . ' has had a price drop for ' .
-            $this->url->product_name_short . ' - ' . $this->url->latest_price_formatted;
+        $min = data_get($this->product?->price_aggregates, 'min', null);
+        $avg = data_get($this->product?->price_aggregates, 'avg', null);
+        $max = data_get($this->product?->price_aggregates, 'max', null);
+
+        return $this->url->store_name . ' price changed to ' . $this->url->latest_price_formatted . '. ' .
+            ($min ? 'Min: ' . $min . '. ' : '') .
+            ($avg ? 'Avg: ' . $avg . '. ' : '') .
+            ($max ? 'Max: ' . $max . '. ' : '')  .
+            ' '
+            . $this->getUrl();
     }
 
     protected function getUrl(): string
