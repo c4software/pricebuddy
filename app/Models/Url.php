@@ -205,21 +205,12 @@ class Url extends Model
         /** @var ?Price $lastPrice */
         $lastPrice = $this->prices()->latest('created_at')->first();
 
+        /** If the last price exists, compare it with the current price. The new price will only be created if it differs from the last price. */
         if ($lastPrice) {
             $lastPriceValue = round((float) $lastPrice->price, 2);
             $currentValue = round($priceFloat, 2);
-            $lastDate = $lastPrice->created_at?->toDateString();
-            $today = now()->toDateString();
 
-            if ($currentValue === $lastPriceValue && $lastDate === $today) {
-                logger()->info("Skipping creating price for URL because value and date unchanged", [
-                    'url_id' => $this->id,
-                    'store_id' => $this->store_id,
-                    'price' => $currentValue,
-                    'last_price' => $lastPriceValue,
-                    'last_date' => $lastDate,
-                ]);
-
+            if ($currentValue === $lastPriceValue) {
                 return $lastPrice;
             }
         }
