@@ -26,6 +26,7 @@ use Illuminate\Support\Str;
  * @property string $product_url
  * @property string $average_price
  * @property string $latest_price_formatted
+ * @property ?string $previous_price_formatted
  * @property ?Store $store
  * @property ?Product $product
  * @property ?int $store_id
@@ -117,6 +118,25 @@ class Url extends Model
                 locale: $this->store?->locale,
                 iso: $this->store?->currency
             )
+        );
+    }
+
+    protected function previousPriceFormatted(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $prices = $this->prices()->orderBy('created_at', 'desc')->take(2)->get();
+
+                if ($prices->count() < 2) {
+                    return null;
+                }
+
+                return CurrencyHelper::toString(
+                    $prices->last()->price ?? 0,
+                    locale: $this->store?->locale,
+                    iso: $this->store?->currency
+                );
+            },
         );
     }
 

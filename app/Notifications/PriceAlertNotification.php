@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Url;
 use App\Models\User;
 use App\Notifications\Messages\GenericNotificationMessage;
+use App\Services\Helpers\CurrencyHelper;
 use App\Services\Helpers\NotificationsHelper;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification as DatabaseNotification;
@@ -121,18 +122,26 @@ class PriceAlertNotification extends Notification
     protected function getSummary(): string
     {
         $min = data_get($this->product?->price_aggregates, 'min', null);
-        $avg = data_get($this->product?->price_aggregates, 'avg', null);
         $max = data_get($this->product?->price_aggregates, 'max', null);
 
-        // If one price so say "Tracking new price" else "Price changed to"
-        $text = $this->url->prices()->count() <= 1 ? 'Tracking new price ' : 'Price changed to ';
+        $hasChanges = $this->url->prices()->count() > 1;
+        $newPrice = $this->url->latest_price_formatted;
+        $previousPrice = $this->url->previous_price_formatted;
 
-        return $text . $this->url->latest_price_formatted . '. ' .
-            ($min ? 'Min: ' . $min . '. ' : '') .
-            ($avg ? 'Avg: ' . $avg . '. ' : '') .
-            ($max ? 'Max: ' . $max . '. ' : '')  .
-            ' '
-            . $this->getUrl();
+        // If we have changes and both prices, show the change
+        if ($hasChanges && $newPrice && $previousPrice) {
+            $text = 'Price changed from ' . $previousPrice . ' to ' . $newPrice . '. \n\n' .
+                ($min ? 'Min: ' . $min . '. ' : '') .
+                ($max ? 'Max: ' . $max . '. ' : '');
+        } elseif ($newPrice) {
+            // New price, but no previous price (Case when tracking a new URL)
+            $text = 'Tracking new price ' . $newPrice . '. ';
+        } else {
+            // Fallback, should not really happen
+            $text = 'Price updated. ';
+        }
+
+        return $text . '\n\n' . $this->getUrl();
     }
 
     protected function getUrl(): string
