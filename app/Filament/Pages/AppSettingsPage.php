@@ -132,6 +132,7 @@ class AppSettingsPage extends SettingsPage
             ])
             ->description(new HtmlString('Available variables : <code>{evolution}</code>, <code>{previousPrice}</code>, <code>{newPrice}</code>, <code>{min}</code>, <code>{max}</code>, <code>{url}</code>'))->schema([
                 MarkdownEditor::make('notification_text')
+                    ->disableAllToolbarButtons()
                     ->label('Notification text')
                     ->hintIcon(Icons::Help->value, 'The text that will be sent in the notification. See above for available variables')
             ]);
