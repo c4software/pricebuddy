@@ -127,15 +127,25 @@ class PriceAlertNotification extends Notification
         $hasChanges = $this->url->prices()->count() > 1;
         $newPrice = $this->url->latest_price_formatted;
         $previousPrice = $this->url->previous_price_formatted;
+        $evolution = "";
+        if ($newPrice > $previousPrice) {
+            $evolution = "📈";
+        } elseif ($newPrice < $previousPrice) {
+            $evolution = "📉";
+        } else {
+            $evolution = "➖";
+        }
+
         $url = $this->getUrl();
 
         // If we have changes and both prices, show the change
         if ($hasChanges && $newPrice && $previousPrice) {
             $text = <<<EOT
-Price changed from {$previousPrice} to {$newPrice}.
+{$evolution} price changed from *{$previousPrice}* to *{$newPrice}*.
 
-Min: {$min}.
-Max: {$max}.
+
+Min: {$min} Max: {$max}.
+
 
 {$url}
 EOT;
