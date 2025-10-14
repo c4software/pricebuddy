@@ -258,9 +258,7 @@ class Product extends Model
     public function isLastScrapeSuccessful(): Attribute
     {
         return Attribute::make(
-            get: fn($value): bool => $this->getPriceCache()
-                ->filter(fn(PriceCacheDto $price) => $price->isLastScrapeSuccessful())
-                ->count() === $this->getPriceCache()->count()
+            get: fn($value): bool => true
         );
     }
 
