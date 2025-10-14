@@ -127,21 +127,36 @@ class PriceAlertNotification extends Notification
         $hasChanges = $this->url->prices()->count() > 1;
         $newPrice = $this->url->latest_price_formatted;
         $previousPrice = $this->url->previous_price_formatted;
+        $url = $this->getUrl();
 
         // If we have changes and both prices, show the change
         if ($hasChanges && $newPrice && $previousPrice) {
-            $text = 'Price changed from ' . $previousPrice . ' to ' . $newPrice . '. \n\n' .
-                ($min ? 'Min: ' . $min . '. ' : '') .
-                ($max ? 'Max: ' . $max . '. ' : '');
+            $text = <<<EOT
+Price changed from {$previousPrice} to {$newPrice}.
+
+Min: {$min}.
+Max: {$max}.
+
+{$url}
+EOT;
         } elseif ($newPrice) {
             // New price, but no previous price (Case when tracking a new URL)
-            $text = 'Tracking new price ' . $newPrice . '. ';
+            $text = <<<EOT
+Tracking new price {$newPrice}.
+
+{$url}
+EOT;
+
         } else {
             // Fallback, should not really happen
-            $text = 'Price updated. ';
+            $text = <<<EOT
+Price updated.
+
+{$url}
+EOT;
         }
 
-        return $text . '\n\n' . $this->getUrl();
+        return $text;
     }
 
     protected function getUrl(): string
