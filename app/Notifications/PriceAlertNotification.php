@@ -8,12 +8,14 @@ use App\Models\User;
 use App\Notifications\Messages\GenericNotificationMessage;
 use App\Services\Helpers\CurrencyHelper;
 use App\Services\Helpers\NotificationsHelper;
+use App\Settings\AppSettings;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification as DatabaseNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 use NotificationChannels\Pushover\PushoverMessage;
+use function PHPUnit\Framework\isEmpty;
 
 class PriceAlertNotification extends Notification
 {
@@ -135,28 +137,22 @@ class PriceAlertNotification extends Notification
         } else {
             $evolution = "➖";
         }
-
         $url = $this->getUrl();
+
+        // Get The notification text from settings
+        $notificationTextTemplate = AppSettings::new()->notification_text;
+        if (isEmpty($notificationTextTemplate)) {
+            $notificationTextTemplate = AppSettings::DEFAULT_NOTIFICATION_TEXT;
+        }
 
         // If we have changes and both prices, show the change
         if ($hasChanges && $newPrice && $previousPrice) {
-            $text = <<<EOT
-{$evolution} price changed from *{$previousPrice}* to *{$newPrice}*.
-
-
-Min: {$min} Max: {$max}.
-
-
-{$url}
-EOT;
-        } elseif ($newPrice) {
-            // New price, but no previous price (Case when tracking a new URL)
-            $text = <<<EOT
-Tracking new price {$newPrice}.
-
-{$url}
-EOT;
-
+            // Replace placeholders in the template
+            $text = str_replace(
+                ['{evolution}', '{previousPrice}', '{newPrice}', '{min}', '{max}', '{url}'],
+                [$evolution, $previousPrice, $newPrice, $min ?? 'N/A', $max ?? 'N/A', $url],
+                $notificationTextTemplate
+            );
         } else {
             // Fallback, should not really happen
             $text = <<<EOT

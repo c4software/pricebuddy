@@ -22,6 +22,16 @@ class AppSettings extends Settings
 
     public array $default_locale_settings;
 
+    public string $notification_text;
+
+    const DEFAULT_NOTIFICATION_TEXT = <<<EOT
+{evolution} price changed from *{previousPrice}* to *{newPrice}*.
+
+Min: {min} Max: {max}.
+
+{url}
+EOT;
+
     public static function new(): self
     {
         return resolve(static::class);

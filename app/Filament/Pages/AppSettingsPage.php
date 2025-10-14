@@ -6,14 +6,14 @@ use App\Enums\Icons;
 use App\Enums\IntegratedServices;
 use App\Enums\NotificationMethods;
 use App\Filament\Actions\Notifications\TestAppriseAction;
-use App\Filament\Actions\Notifications\TestGotifyAction;
+use App\Filament\Actions\Notifications\TestNotificationContent;
 use App\Filament\Traits\FormHelperTrait;
 use App\Models\UrlResearch;
 use App\Services\Helpers\CurrencyHelper;
 use App\Services\Helpers\LocaleHelper;
 use App\Services\SearchService;
 use App\Settings\AppSettings;
-use Filament\Forms;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -103,90 +103,38 @@ class AppSettingsPage extends SettingsPage
 
                 self::makeFormHeading('Notifications'),
                 $this->getAppriseSettings(),
+                $this->getNotificationTextSettings(),
 
                 self::makeFormHeading('Integrations'),
                 $this->getSearXngSettings(),
             ]);
     }
 
-    protected function getEmailSettings(): Section
+    protected function getNotificationTextSettings(): Section
     {
-        return self::makeSettingsSection(
-            'Email',
-            self::NOTIFICATION_SERVICES_KEY,
-            NotificationMethods::Mail->value,
-            [
-                TextInput::make('smtp_host')
-                    ->label('SMTP host')
-                    ->hintIcon(Icons::Help->value, 'Host domain or IP address of the SMTP server')
-                    ->required(),
-                TextInput::make('smtp_port')
-                    ->label('SMTP Port')
-                    ->hintIcon(Icons::Help->value, 'The port of the SMTP server')
-                    ->required()
-                    ->default('25'),
-                TextInput::make('smtp_user')
-                    ->label('SMTP Username')
-                    ->hintIcon(Icons::Help->value, 'The optional username for the SMTP server'),
-                TextInput::make('smtp_password')
-                    ->password()
-                    ->label('SMTP Password')
-                    ->hintIcon(Icons::Help->value, 'The optional password for the SMTP server'),
-                TextInput::make('from_address')
-                    ->required()
-                    ->label('From address')
-                    ->hintIcon(Icons::Help->value, 'The email address to send emails from'),
-                Select::make('encryption')
-                    ->label('Encryption')
-                    ->placeholder('None')
-                    ->options([
-                        'tls' => 'TLS',
-                        'ssl' => 'SSL',
-                    ])
-                    ->hintIcon(Icons::Help->value, 'The encryption method to use when sending emails'),
-            ],
-            __('SMTP settings for sending emails')
-        );
-    }
+        return Section::make('Notification text')
+            ->headerActions([
+                // Test notification action
+                TestNotificationContent::make()->setSettings(fn() => [
+                    "notification_text" => data_get($this->form->getState(), 'notification_text'),
+                    "apprise" => data_get($this->form->getState(), 'notification_services.apprise', [])
+                ]),
 
-    protected function getPushoverSettings(): Section
-    {
-        return self::makeSettingsSection(
-            'Pushover',
-            self::NOTIFICATION_SERVICES_KEY,
-            NotificationMethods::Pushover->value,
-            [
-                TextInput::make('token')
-                    ->label('Pushover token')
-                    ->hint(new HtmlString('<a href="https://pushover.net/apps/build" target="_blank">Create an application</a>'))
-                    ->required(),
-            ],
-            __('Push notifications via Pushover')
-        );
-    }
-
-    protected function getGotifySettings(): Section
-    {
-        return self::makeSettingsSection(
-            'Gotify',
-            self::NOTIFICATION_SERVICES_KEY,
-            NotificationMethods::Gotify->value,
-            [
-                TextInput::make('url')
-                    ->label('Gotify server URL')
-                    ->placeholder('https://gotify.example.com')
-                    ->required(),
-                TextInput::make('token')
-                    ->label('Application token')
-                    ->required()
-                    ->password()
-                    ->suffixAction(
-                        TestGotifyAction::make()
-                            ->setSettings(fn () => $this->form->getState()['notification_services']['gotify'] ?? []),
-                    ),
-            ],
-            __('Push notifications via Gotify')
-        );
+                // Reset to default action
+                Action::make('reset_notification_text')
+                    ->label('Reset to default')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->icon('heroicon-o-arrow-path')
+                    ->action(function (callable $set) {
+                        $set('notification_text', AppSettings::DEFAULT_NOTIFICATION_TEXT);
+                    }),
+            ])
+            ->description(new HtmlString('Available variables : <code>{evolution}</code>, <code>{previousPrice}</code>, <code>{newPrice}</code>, <code>{min}</code>, <code>{max}</code>, <code>{url}</code>'))->schema([
+                MarkdownEditor::make('notification_text')
+                    ->label('Notification text')
+                    ->hintIcon(Icons::Help->value, 'The text that will be sent in the notification. See above for available variables')
+            ]);
     }
 
     protected function getAppriseSettings(): Section
@@ -202,7 +150,7 @@ class AppSettingsPage extends SettingsPage
                     ->helperText(str('You can use any of the [supported services](https://github.com/caronc/apprise) with Apprise. Just enter the full URL here.')->inlineMarkdown()->toHtmlString())
                     ->suffixAction(
                         TestAppriseAction::make()
-                            ->setSettings(fn () => data_get($this->form->getState(), 'notification_services.apprise', [])),
+                            ->setSettings(fn() => data_get($this->form->getState(), 'notification_services.apprise', [])),
                     )
                     ->required(),
             ],
@@ -265,14 +213,14 @@ class AppSettingsPage extends SettingsPage
     public static function getLocaleFormFields(string $settingsKey, bool $required = true): array
     {
         return [
-            Select::make($settingsKey.'.locale')
+            Select::make($settingsKey . '.locale')
                 ->label('Locale')
                 ->searchable()
                 ->options(LocaleHelper::getAllLocalesAsOptions())
                 ->hintIcon(Icons::Help->value, 'Primarily used when extracting and displaying prices. Help translate this app on GitHub')
                 ->required($required)
                 ->default(CurrencyHelper::getLocale()),
-            Select::make($settingsKey.'.currency')
+            Select::make($settingsKey . '.currency')
                 ->label('Currency')
                 ->searchable()
                 ->options(LocaleHelper::getAllCurrencyLocalesAsOptions())
