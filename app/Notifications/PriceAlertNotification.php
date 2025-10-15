@@ -123,39 +123,44 @@ class PriceAlertNotification extends Notification
 
     protected function getSummary(): string
     {
-        $min = data_get($this->product?->price_aggregates, 'min', null);
-        $max = data_get($this->product?->price_aggregates, 'max', null);
+        try {
+            $min = data_get($this->product?->price_aggregates, 'min', null);
+            $max = data_get($this->product?->price_aggregates, 'max', null);
 
-        $hasChanges = $this->url->prices()->count() > 1;
-        $newPrice = $this->url->latest_price_formatted;
-        $previousPrice = $this->url->previous_price_formatted;
+            $hasChanges = $this->url->prices()->count() > 1;
+            $newPrice = $this->url->latest_price_formatted;
+            $previousPrice = $this->url->previous_price_formatted;
 
-        if ($newPrice > $previousPrice) {
-            $evolution = "📈";
-        } elseif ($newPrice < $previousPrice) {
-            $evolution = "📉";
-        } else {
-            $evolution = "➖";
-        }
-        $url = $this->getUrl();
+            if ($newPrice > $previousPrice) {
+                $evolution = "📈";
+            } elseif ($newPrice < $previousPrice) {
+                $evolution = "📉";
+            } else {
+                $evolution = "➖";
+            }
+            $url = $this->getUrl();
 
-        // Get The notification text from settings
-        $notificationTextTemplate = AppSettings::new()->notification_text;
-        if (isEmpty($notificationTextTemplate)) {
-            $notificationTextTemplate = AppSettings::DEFAULT_NOTIFICATION_TEXT;
-        }
+            // Get The notification text from settings
+            $notificationTextTemplate = AppSettings::new()->notification_text;
+            if (empty($notificationTextTemplate)) {
+                $notificationTextTemplate = AppSettings::DEFAULT_NOTIFICATION_TEXT;
+            }
 
-        // If we have changes and both prices, show the change
-        if ($hasChanges && $newPrice && $previousPrice) {
-            // Replace placeholders in the template
-            return str_replace(
-                ['{evolution}', '{previousPrice}', '{newPrice}', '{min}', '{max}', '{url}'],
-                [$evolution, $previousPrice, $newPrice, $min ?? 'N/A', $max ?? 'N/A', $url],
-                $notificationTextTemplate
-            );
-        } else {
-            // Fallback, should not really happen
-            return "Price updated. {$url}";
+            // If we have changes and both prices, show the change
+            if ($hasChanges && $newPrice && $previousPrice) {
+                // Replace placeholders in the template
+                return str_replace(
+                    ['{evolution}', '{previousPrice}', '{newPrice}', '{min}', '{max}', '{url}'],
+                    [$evolution, $previousPrice, $newPrice, $min ?? 'N/A', $max ?? 'N/A', $url],
+                    $notificationTextTemplate
+                );
+            } else {
+                // Fallback, should not really happen
+                return "Price updated. {$url}";
+            }
+        } catch (\Exception $e) {
+            logger()->error('Error generating price alert notification summary: ' . $e->getMessage(), ['exception' => $e]);
+            return "Price updated. {$this->getUrl()}";
         }
     }
 

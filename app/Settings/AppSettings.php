@@ -24,7 +24,7 @@ class AppSettings extends Settings
 
     public string $notification_text;
 
-    const DEFAULT_NOTIFICATION_TEXT = <<<EOT
+    const string DEFAULT_NOTIFICATION_TEXT = <<<EOT
 {evolution} price changed from {previousPrice} to {newPrice}.
 
 Min: {min} Max: {max}.
