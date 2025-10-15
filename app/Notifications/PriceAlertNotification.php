@@ -129,7 +129,7 @@ class PriceAlertNotification extends Notification
         $hasChanges = $this->url->prices()->count() > 1;
         $newPrice = $this->url->latest_price_formatted;
         $previousPrice = $this->url->previous_price_formatted;
-        $evolution = "";
+
         if ($newPrice > $previousPrice) {
             $evolution = "📈";
         } elseif ($newPrice < $previousPrice) {
@@ -148,21 +148,15 @@ class PriceAlertNotification extends Notification
         // If we have changes and both prices, show the change
         if ($hasChanges && $newPrice && $previousPrice) {
             // Replace placeholders in the template
-            $text = str_replace(
+            return str_replace(
                 ['{evolution}', '{previousPrice}', '{newPrice}', '{min}', '{max}', '{url}'],
                 [$evolution, $previousPrice, $newPrice, $min ?? 'N/A', $max ?? 'N/A', $url],
                 $notificationTextTemplate
             );
         } else {
             // Fallback, should not really happen
-            $text = <<<EOT
-Price updated.
-
-{$url}
-EOT;
+            return "Price updated. {$url}";
         }
-
-        return $text;
     }
 
     protected function getUrl(): string
