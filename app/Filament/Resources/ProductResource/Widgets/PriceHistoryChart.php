@@ -37,8 +37,7 @@ class PriceHistoryChart extends ChartWidget
 
     protected function getData(): array
     {
-        $history = $this->record->getPriceHistoryCached();
-
+        $history = $this->record->getPriceHistoryPerHour();
         $datasets = [];
 
         $urls = Url::findMany($history->keys())->values();
@@ -57,29 +56,6 @@ class PriceHistoryChart extends ChartWidget
         return [
             'datasets' => $datasets,
             'labels' => $this->getLabels($history),
-        ];
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            'scales' => [
-                'x' => [
-                    'type' => 'timeseries',
-                    'ticks' => [
-                        'stepSize' => 5,
-                    ],
-                    'time' => [
-                        'unit' => 'day',
-                    ],
-                ],
-                'y' => [
-                    'type' => 'linear',
-                    'ticks' => [
-                        'count' => 5,
-                    ],
-                ],
-            ],
         ];
     }
 

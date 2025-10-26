@@ -481,12 +481,29 @@ class Product extends Model
     /**
      * Get the cached price history for this product.
      */
-    public function getPriceHistoryCached(): Collection
+    public function getPriceHistoryPerHour(): Collection
     {
-        return $this->getPriceCache()
-            ->mapWithKeys(fn(PriceCacheDto $price) => [
-                $price->getUrlId() => $price->getHistory(),
-            ]);
+        return $this->getAllPricesQuery()
+            ->whereDate('prices.created_at', '>=', now()->subYear())
+            ->where('prices.price', '>', 0)
+            ->orderBy('prices.created_at')
+            ->get()
+            ->groupBy('url_id')
+            ->mapWithKeys(function ($prices, int $storeId) {
+                // All price entries for the store.
+                $storeHistory = $prices->sortBy('created_at')
+                    ->groupBy('created_at')
+                    ->mapWithKeys(fn($prices, string $date) => [
+                        Carbon::parse($date)->toDateTimeString("minute") => $prices->pluck('price')->min(),
+                    ]);
+
+                // If only one price, extend back one day.
+                if ($storeHistory->count() === 1) {
+                    $storeHistory = $this->extendSinglePriceHistory($storeHistory);
+                }
+
+                return [$storeId => $storeHistory->sortKeys()];
+            });
     }
 
     public function shouldNotifyOnPrice(Price $price): bool
