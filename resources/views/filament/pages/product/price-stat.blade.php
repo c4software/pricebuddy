@@ -98,25 +98,22 @@
             @endif
         </div>
 
-        @if (! $priceCache->isLastScrapeSuccessful() || $priceCache->matchesNotification($product))
-            <div class="mt-2 pb-4">
-                <div class="mb-2 text-custom-500 dark:text-custom-400 flex gap-2 items-center text-xs">
-                    {{__('Last price change ' . $priceCache->getFormattedLastChangeSinceLastScrape())}}
-                </div>
-
-                @if ($priceCache->matchesNotification($product))
-                    <div>
-                        @include('components.icon-badge', [
-                            'hoverText' => __('Price matches your target'),
-                            'label' => __('Notify match'),
-                            'color' => 'success',
-                            'icon' => 'heroicon-m-shopping-bag'
-                        ])
-                    </div>
-                @endif
+        <div class="mt-2 pb-4">
+            <div class="mb-2 text-custom-500 dark:text-custom-400 flex gap-2 items-center text-xs">
+                {{__('Last price change ' . $priceCache->getFormattedLastChangeSinceLastScrape())}}
             </div>
-        @endif
 
+            @if ($priceCache->matchesNotification($product))
+                <div>
+                    @include('components.icon-badge', [
+                        'hoverText' => __('Price matches your target'),
+                        'label' => __('Notify match'),
+                        'color' => 'success',
+                        'icon' => 'heroicon-m-shopping-bag'
+                    ])
+                </div>
+            @endif
+        </div>
 
 
         @if ($chart = $getChart())
