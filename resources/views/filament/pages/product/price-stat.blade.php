@@ -43,122 +43,117 @@
     :class="expanded ? 'expanded' : 'collapsed'"
 >
     <div class="pb-expandable-stat__top">
-    <{!! $tag !!}
-    @if ($url)
-        {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab()) }}
-    @endif
-    {{
-        $getExtraAttributeBag()
-            ->class([
-                'pb-expandable-stat__card flex-1 relative block rounded-xl rounded-tr-none bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 '.$wrapperStyle,
-            ])
-    }}
-    >
-    <div class="flex mb-4 gap-4">
-
-        <div
-            class="fi-wi-stats-overview-stat-value {{ $firstCardValueStyle }}"
+        <{!! $tag !!}
+        @if ($url)
+            {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab()) }}
+        @endif
+        {{
+            $getExtraAttributeBag()
+                ->class([
+                    'pb-expandable-stat__card flex-1 relative block rounded-xl rounded-tr-none bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 '.$wrapperStyle,
+                ])
+        }}
         >
-            {{ $getValue() }}
-        </div>
+        <div class="flex mb-4 gap-4">
 
-        <div class="flex items-center gap-x-2 justify-start">
-            @if ($icon = $getIcon())
-                <x-filament::icon
-                    :icon="$icon"
-                    class="fi-wi-stats-overview-stat-icon h-5 w-5 text-gray-400 dark:text-gray-500"
-                />
-            @endif
-
-            <span
-                class="fi-wi-stats-overview-stat-label text-sm font-medium text-gray-500 dark:text-gray-400"
+            <div
+                class="fi-wi-stats-overview-stat-value {{ $firstCardValueStyle }}"
             >
-                {{ $getLabel() }}
+                {{ $getValue() }}
+            </div>
 
-                @if ($descriptionIcon && in_array($descriptionIconPosition, [IconPosition::After, 'after']))
+            <div class="flex items-center gap-x-2 justify-start">
+                @if ($icon = $getIcon())
                     <x-filament::icon
-                        :icon="$descriptionIcon"
-                        :class="$descriptionIconClasses"
-                        :style="$descriptionIconStyles"
+                        :icon="$icon"
+                        class="fi-wi-stats-overview-stat-icon h-5 w-5 text-gray-400 dark:text-gray-500"
                     />
                 @endif
+
+                <span
+                    class="fi-wi-stats-overview-stat-label text-sm font-medium text-gray-500 dark:text-gray-400"
+                >
+                {{ $getLabel() }}
+
+                    @if ($descriptionIcon && in_array($descriptionIconPosition, [IconPosition::After, 'after']))
+                        <x-filament::icon
+                            :icon="$descriptionIcon"
+                            :class="$descriptionIconClasses"
+                            :style="$descriptionIconStyles"
+                        />
+                    @endif
             </span>
+            </div>
+
+            @if ($description = $getDescription())
+                <div class="flex items-center ml-auto gap-2 mb-0" title="{{ $description }}">
+                    @if ($descriptionIcon && in_array($descriptionIconPosition, [IconPosition::Before, 'before']))
+                        <x-filament::icon
+                            :icon="$descriptionIcon"
+                            :class="$descriptionIconClasses.' w-8 h-8'"
+                            :style="$descriptionIconStyles"
+                        />
+                    @endif
+                </div>
+            @endif
         </div>
 
-        @if ($description = $getDescription())
-            <div class="flex items-center ml-auto gap-2 mb-0" title="{{ $description }}">
-                @if ($descriptionIcon && in_array($descriptionIconPosition, [IconPosition::Before, 'before']))
-                    <x-filament::icon
-                        :icon="$descriptionIcon"
-                        :class="$descriptionIconClasses.' w-8 h-8'"
-                        :style="$descriptionIconStyles"
-                    />
+        @if (! $priceCache->isLastScrapeSuccessful() || $priceCache->matchesNotification($product))
+            <div class="mt-2 pb-4">
+                <div class="mb-2 text-custom-500 dark:text-custom-400 flex gap-2 items-center text-xs">
+                    {{__('Last price change ' . $priceCache->getFormattedLastChangeSinceLastScrape())}}
+                </div>
+
+                @if ($priceCache->matchesNotification($product))
+                    <div>
+                        @include('components.icon-badge', [
+                            'hoverText' => __('Price matches your target'),
+                            'label' => __('Notify match'),
+                            'color' => 'success',
+                            'icon' => 'heroicon-m-shopping-bag'
+                        ])
+                    </div>
                 @endif
             </div>
         @endif
-    </div>
-
-    @if (! $priceCache->isLastScrapeSuccessful() || $priceCache->matchesNotification($product))
-        <div class="mt-2 pb-4">
-            @if (! $priceCache->isLastScrapeSuccessful())
-                <div class="mb-2">
-                    @include('components.icon-badge', [
-                        'label' => __('Last price change '.ceil($priceCache->getFormattedLastChangeSinceLastScrape())),
-                         'color' => 'warning',
-                    ])
-                </div>
-            @endif
-
-            @if ($priceCache->matchesNotification($product))
-                <div>
-                    @include('components.icon-badge', [
-                        'hoverText' => __('Price matches your target'),
-                        'label' => __('Notify match'),
-                        'color' => 'success',
-                        'icon' => 'heroicon-m-shopping-bag'
-                    ])
-                </div>
-            @endif
-        </div>
-    @endif
 
 
 
-    @if ($chart = $getChart())
-        {{-- An empty function to initialize the Alpine component with until it's loaded with `ax-load`. This removes the need for `x-ignore`, allowing the chart to be updated via Livewire polling. --}}
-        <div x-data="{ statsOverviewStatChart: function () {} }">
-            <div
-                @if (FilamentView::hasSpaMode())
-                    ax-load="visible"
-                @else
-                    ax-load
-                @endif
-                ax-load-src="{{ \Filament\Support\Facades\FilamentAsset::getAlpineComponentSrc('stats-overview/stat/chart', 'filament/widgets') }}"
-                x-data="statsOverviewStatChart({
+        @if ($chart = $getChart())
+            {{-- An empty function to initialize the Alpine component with until it's loaded with `ax-load`. This removes the need for `x-ignore`, allowing the chart to be updated via Livewire polling. --}}
+            <div x-data="{ statsOverviewStatChart: function () {} }">
+                <div
+                    @if (FilamentView::hasSpaMode())
+                        ax-load="visible"
+                    @else
+                        ax-load
+                    @endif
+                    ax-load-src="{{ \Filament\Support\Facades\FilamentAsset::getAlpineComponentSrc('stats-overview/stat/chart', 'filament/widgets') }}"
+                    x-data="statsOverviewStatChart({
                                 dataChecksum: @js($dataChecksum),
                                 labels: @js(array_keys($chart)),
                                 values: @js(array_values($chart)),
                             })"
-                @class([
-                    'pb-expandable-stat__chart absolute inset-x-0 bottom-0 overflow-hidden rounded-b-xl',
-                    match ($chartColor) {
-                        'gray' => null,
-                        default => 'fi-color-custom',
-                    },
-                    is_string($chartColor) ? "fi-color-{$chartColor}" : null,
-                ])
-                @style([
-                    get_color_css_variables(
-                        $chartColor,
-                        shades: [50, 400, 500],
-                        alias: 'widgets::stats-overview-widget.stat.chart',
-                    ) => $chartColor !== 'gray',
-                ])
-            >
-                <canvas x-ref="canvas" class="h-6"></canvas>
+                    @class([
+                        'pb-expandable-stat__chart absolute inset-x-0 bottom-0 overflow-hidden rounded-b-xl',
+                        match ($chartColor) {
+                            'gray' => null,
+                            default => 'fi-color-custom',
+                        },
+                        is_string($chartColor) ? "fi-color-{$chartColor}" : null,
+                    ])
+                    @style([
+                        get_color_css_variables(
+                            $chartColor,
+                            shades: [50, 400, 500],
+                            alias: 'widgets::stats-overview-widget.stat.chart',
+                        ) => $chartColor !== 'gray',
+                    ])
+                >
+                    <canvas x-ref="canvas" class="h-6"></canvas>
 
-                <span
-                    x-ref="backgroundColorElement"
+                    <span
+                        x-ref="backgroundColorElement"
                         @class([
                             match ($chartColor) {
                                 'gray' => 'text-gray-100 dark:text-gray-800',
@@ -167,8 +162,8 @@
                         ])
                     ></span>
 
-                <span
-                    x-ref="borderColorElement"
+                    <span
+                        x-ref="borderColorElement"
                         @class([
                             match ($chartColor) {
                                 'gray' => 'text-gray-400',
@@ -176,9 +171,9 @@
                             },
                         ])
                     ></span>
+                </div>
             </div>
-        </div>
-    @endif
+        @endif
 
     </{!! $tag !!}>
     <div class="pb-expandable-stat__context">
@@ -187,24 +182,25 @@
             :class="expanded ? 'rotate-180' : 'collapsed'"
             @click="expanded = !expanded"
         >
-            <x-filament::icon icon="heroicon-s-chevron-down" class="h-5 w-5" />
+            <x-filament::icon icon="heroicon-s-chevron-down" class="h-5 w-5"/>
         </button>
     </div>
-    </div>
+</div>
 
-    <div x-show="expanded">
-        <div class="pb-expandable-stat__actions px-3 pt-4 pb-3 flex gap-2 justify-start items-center text-gray-500 dark:text-gray-400">
-            {{ ($this->viewAction)(['url' => $priceCache->getUrl()]) }}
-            {{ ($this->fetchAction)(['url' => $priceCache->getUrlId()]) }}
-            {{ ($this->deleteAction)(['url' => $priceCache->getUrlId()]) }}
-         </div>
-        @include('components.price-aggregates', [
-            'aggregates' => $priceCache->getAggregateFormatted(),
-            'trend' => $priceCache->getTrend(),
-            'hideTrend' => true,
-        ])
+<div x-show="expanded">
+    <div
+        class="pb-expandable-stat__actions px-3 pt-4 pb-3 flex gap-2 justify-start items-center text-gray-500 dark:text-gray-400">
+        {{ ($this->viewAction)(['url' => $priceCache->getUrl()]) }}
+        {{ ($this->fetchAction)(['url' => $priceCache->getUrlId()]) }}
+        {{ ($this->deleteAction)(['url' => $priceCache->getUrlId()]) }}
     </div>
+    @include('components.price-aggregates', [
+        'aggregates' => $priceCache->getAggregateFormatted(),
+        'trend' => $priceCache->getTrend(),
+        'hideTrend' => true,
+    ])
+</div>
 
-    <x-filament-actions::modals />
+<x-filament-actions::modals/>
 
 </div>
