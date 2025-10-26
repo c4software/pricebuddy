@@ -132,6 +132,11 @@ class PriceCacheDto
         return $this->lastScrapeDate?->diffInHours(now());
     }
 
+    public function getFormattedLastChangeSinceLastScrape(): ?string
+    {
+        return $this->lastScrapeDate?->diffForHumans();
+    }
+
     public function isLastScrapeSuccessful(): bool
     {
         $hours = $this->getHoursSinceLastScrape();

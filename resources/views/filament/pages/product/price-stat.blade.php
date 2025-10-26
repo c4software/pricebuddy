@@ -103,7 +103,7 @@
             @if (! $priceCache->isLastScrapeSuccessful())
                 <div class="mb-2">
                     @include('components.icon-badge', [
-                        'label' => __('Last price change '.ceil($priceCache->getHoursSinceLastScrape()).'hrs ago'),
+                        'label' => __('Last price change '.ceil($priceCache->getFormattedLastChangeSinceLastScrape())),
                          'color' => 'warning',
                     ])
                 </div>
