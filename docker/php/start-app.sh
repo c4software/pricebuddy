@@ -27,6 +27,12 @@ if [ -z "$(php artisan config:show app.key)" ]; then
     php artisan key:generate --force
 fi
 
+# If env DB_CONNECTION is sqlite, ensure the sqlite file exists
+IS_SQLITE=$(php artisan config:show database.default | grep -o 'sqlite')
+if [ "$IS_SQLITE" == "sqlite" ]; then
+  touch storage/database.sqlite
+fi
+
 # Run migrations and seed the database if required.
 php artisan buddy:init-db
 
