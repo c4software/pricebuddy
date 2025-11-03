@@ -22,11 +22,10 @@ php artisan storage:link
 php artisan config:clear
 php artisan optimize:clear
 
-# wait for the database t
-while ! nc ${DB_HOST:-database} ${DB_PORT:-3306}; do
-  >&2 echo "Database unavailable - sleeping"
-  sleep 1
-done
+# Check if the app key is set
+if [ -z "$(php artisan config:show app.key)" ]; then
+    php artisan key:generate --force
+fi
 
 # Run migrations and seed the database if required.
 php artisan buddy:init-db

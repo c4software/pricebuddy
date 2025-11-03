@@ -27,3 +27,4 @@ bun.lock
 /packages
 /core
 /scratch
+./storage/database.sqlite

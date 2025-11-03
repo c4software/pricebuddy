@@ -26,6 +26,8 @@ class InitDatabase extends Command
      */
     public function handle()
     {
+        $this->getOutput()->info('Checking database connection');
+
         try {
             DB::connection()->getPdo();
             $hasTables = Schema::hasTable('migrations');
@@ -42,39 +44,66 @@ class InitDatabase extends Command
                 $this->callSilent('migrate', ['--force' => true]);
             });
 
-            // @todo sync stores?
+            $this->createDefaultUser();
+            $this->createDefaultStores();
         } else {
             $this->getOutput()->info('Database exists, but not initialized');
 
-            $this->components->task('Setting up the database', fn () => $this
-                ->callSilent('migrate:fresh', ['--force' => true])
+            $this->components->task(
+                'Setting up the database',
+                fn() => $this
+                    ->callSilent('migrate:fresh', ['--force' => true])
             );
 
-            // @phpstan-ignore-next-line
-            $storeCountry = env('DEFAULT_STORES_COUNTRY', 'all');
-            $this->components->task('Creating stores for country: '.$storeCountry, fn () => $this
-                ->callSilent(CreateStores::COMMAND, ['country' => $storeCountry])
-            );
-
-            // @phpstan-ignore-next-line
-            $email = env('APP_USER_EMAIL');
-            // @phpstan-ignore-next-line
-            $pass = env('APP_USER_PASSWORD');
-            if ($email && $pass) {
-                $this->line('Creating new user with email: '.$email.' and password: '.$pass);
-                $this->components->task('Creating the default user', fn () => $this
-                    ->callSilent('make:filament-user', [
-                        // @phpstan-ignore-next-line
-                        '--name' => env('APP_USER_NAME', 'Admin'),
-                        '--email' => $email,
-                        '--password' => $pass,
-                    ])
-                );
-            }
+            $this->createDefaultStores();
+            $this->createDefaultUser();
         }
 
         $this->getOutput()->success('Database init complete');
 
         return self::SUCCESS;
+    }
+
+    private function createDefaultStores(): void
+    {
+        // If there is already stores, do nothing
+        $storeCount = DB::table('stores')->count();
+        if ($storeCount > 0) {
+            return;
+        }
+
+        // @phpstan-ignore-next-line
+        $storeCountry = env('DEFAULT_STORES_COUNTRY', 'all');
+        $this->components->task(
+            'Creating stores for country: ' . $storeCountry,
+            fn() => $this
+                ->callSilent(CreateStores::COMMAND, ['country' => $storeCountry])
+        );
+    }
+
+    private function createDefaultUser(): void
+    {
+        // @phpstan-ignore-next-line
+        $email = env('APP_USER_EMAIL');
+        // @phpstan-ignore-next-line
+        $password = env('APP_USER_PASSWORD');
+
+        if (!$email || !$password) {
+            return;
+        }
+
+        # Check if there is 0 users
+        $userCount = DB::table('users')->count();
+        if ($userCount > 0) {
+            return;
+        }
+
+        $this->components->task('Creating the default user', fn() => $this
+            ->callSilent('make:filament-user', [
+                // @phpstan-ignore-next-line
+                '--name' => env('APP_USER_NAME', 'Admin'),
+                '--email' => $email,
+                '--password' => $password,
+            ]));
     }
 }
