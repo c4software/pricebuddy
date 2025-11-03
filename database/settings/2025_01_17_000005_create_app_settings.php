@@ -1,5 +1,6 @@
 <?php
 
+use App\Settings\AppSettings;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
 return new class extends SettingsMigration {
@@ -15,6 +16,7 @@ return new class extends SettingsMigration {
         $this->migrator->add('app.max_attempts_to_scrape', 3);
         $this->migrator->add('app.notification_services', []);
         $this->migrator->add('app.integrated_services', []);
+        $this->migrator->add('app.notification_text', AppSettings::DEFAULT_NOTIFICATION_TEXT);
     }
 
     /**
