@@ -54,7 +54,7 @@ Easiest installation method is via docker-compose. Simply make a copy of
 `touch .env && docker compose up -d`. If using the defaults, the app will be available at
 `http://localhost:8080` with the username `admin@example.com` and password `admin`.
 
-### Other methods 
+### Other methods
 
 Due to the complexity of the app and its dependencies, other installation methods 
 are not recommended but if you are that keen to not use docker, look through the 
