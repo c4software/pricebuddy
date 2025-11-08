@@ -9,20 +9,25 @@ use App\Filament\Actions\Notifications\TestAppriseAction;
 use App\Filament\Actions\Notifications\TestNotificationContent;
 use App\Filament\Traits\FormHelperTrait;
 use App\Models\UrlResearch;
+use App\Services\DatabaseBackupService;
 use App\Services\Helpers\CurrencyHelper;
 use App\Services\Helpers\LocaleHelper;
 use App\Services\SearchService;
 use App\Settings\AppSettings;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Pages\SettingsPage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Once;
+use Throwable;
 
 class AppSettingsPage extends SettingsPage
 {
@@ -107,6 +112,9 @@ class AppSettingsPage extends SettingsPage
 
                 self::makeFormHeading('Integrations'),
                 $this->getSearXngSettings(),
+
+                self::makeFormHeading('Database'),
+                $this->getDatabaseBackupSection(),
             ]);
     }
 
@@ -157,6 +165,73 @@ class AppSettingsPage extends SettingsPage
             ],
             __('Push notifications via Apprise')
         );
+    }
+
+    protected function getDatabaseBackupSection(): Section
+    {
+        return Section::make('Database backup')
+            ->description(__('Export or import your products and their price history.'))
+            ->headerActions([
+                Action::make('export_database')
+                    ->label(__('Export'))
+                    ->icon(Icons::Database->value)
+                    ->color('gray')
+                    ->action(function () {
+                        $json = app(DatabaseBackupService::class)->export();
+                        $fileName = 'pricebuddy-backup-'.now()->format('Y-m-d_H-i-s').'.json';
+
+                        return response()->streamDownload(
+                            fn () => print($json),
+                            $fileName,
+                            ['Content-Type' => 'application/json']
+                        );
+                    }),
+                Action::make('import_database')
+                    ->label(__('Import'))
+                    ->icon(Icons::Import->value)
+                    ->color('gray')
+                    ->modalHeading(__('Import database backup'))
+                    ->modalSubmitActionLabel(__('Import'))
+                    ->form([
+                        FileUpload::make('backup')
+                            ->label(__('Backup file'))
+                            ->disk('local')
+                            ->directory('imports/backups')
+                            ->acceptedFileTypes(['application/json', 'text/json'])
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $path = data_get($data, 'backup');
+
+                        if (! $path || ! Storage::disk('local')->exists($path)) {
+                            $this->failure();
+
+                            return;
+                        }
+
+                        $storage = Storage::disk('local');
+                        $contents = $storage->get($path);
+                        $storage->delete($path);
+
+                        try {
+                            $payload = json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
+                            app(DatabaseBackupService::class)->import($payload, auth()->user());
+                            Cache::flush();
+                            Once::flush();
+                            $this->success();
+                        } catch (Throwable $exception) {
+                            report($exception);
+                            $this->failure();
+                        }
+                    })
+                    ->successNotificationTitle(__('Backup imported'))
+                    ->failureNotificationTitle(__('Unable to import backup')),
+            ])
+            ->schema([
+                Placeholder::make('database_backup_description')
+                    ->content(__('Use the actions above to import or export your data.'))
+                    ->columnSpanFull(),
+            ]);
     }
 
     protected function getSearXngSettings(): Section
