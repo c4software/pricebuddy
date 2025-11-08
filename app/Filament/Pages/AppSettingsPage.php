@@ -8,6 +8,7 @@ use App\Enums\NotificationMethods;
 use App\Filament\Actions\Notifications\TestAppriseAction;
 use App\Filament\Actions\Notifications\TestNotificationContent;
 use App\Filament\Traits\FormHelperTrait;
+use App\Models\Product;
 use App\Models\UrlResearch;
 use App\Services\DatabaseBackupService;
 use App\Services\Helpers\CurrencyHelper;
@@ -170,8 +171,8 @@ class AppSettingsPage extends SettingsPage
 
     protected function getDatabaseBackupSection(): Section
     {
-        return Section::make('Database backup')
-            ->description(__('Export or import your products and their price history.'))
+        return Section::make('Database operations')
+            ->description(__('Export,Import or delete your products and their price history.'))
             ->headerActions([
                 Action::make('export_database')
                     ->label(__('Export'))
@@ -236,10 +237,45 @@ class AppSettingsPage extends SettingsPage
                     })
                     ->successNotificationTitle(__('Backup imported'))
                     ->failureNotificationTitle(__('Unable to import backup')),
+
+                Action::make('truncate_products')
+                    ->label(__('Delete all products'))
+                    ->icon(Icons::Delete->value)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Delete all products'))
+                    ->modalSubmitActionLabel(__('Delete'))
+                    ->modalDescription(__('This will remove every product, URL, and price history entry. This action cannot be undone.'))
+                    ->action(function () {
+                        try {
+                            Product::query()->lazyById(100)->each(function (Product $product) {
+                                $product->tags()->detach();
+                                $product->delete();
+                            });
+
+                            Cache::flush();
+                            Once::flush();
+
+                            Notification::make()
+                                ->title('All products deleted successfully')
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            report($exception);
+
+                            Notification::make()
+                                ->title('Unable to delete products')
+                                ->body('An error occurred while deleting products.')
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->successNotificationTitle(__('All products deleted'))
+                    ->failureNotificationTitle(__('Unable to delete products')),
             ])
             ->schema([
                 Placeholder::make('database_backup_description')
-                    ->content(__('Use the actions above to import or export your data.'))
+                    ->content(__('You can export a backup of your entire database, import a previously exported backup, or delete all products and their price history from the database. Be cautious when deleting data, as this action cannot be undone.'))
                     ->columnSpanFull(),
             ]);
     }
