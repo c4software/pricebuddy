@@ -22,6 +22,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\SettingsPage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -204,8 +205,6 @@ class AppSettingsPage extends SettingsPage
                         $path = data_get($data, 'backup');
 
                         if (! $path || ! Storage::disk('local')->exists($path)) {
-                            $this->failure();
-
                             return;
                         }
 
@@ -218,10 +217,21 @@ class AppSettingsPage extends SettingsPage
                             app(DatabaseBackupService::class)->import($payload, auth()->user());
                             Cache::flush();
                             Once::flush();
-                            $this->success();
+
+                            Notification::make()
+                                ->title('Backup imported successfully')
+                                ->success()
+                                ->send();
+
+                            redirect("/");
                         } catch (Throwable $exception) {
                             report($exception);
-                            $this->failure();
+                            // Make notification failure
+                            Notification::make()
+                                ->title('Unable to import backup')
+                                ->body('The backup file is invalid or could not be imported.')
+                                ->danger()
+                                ->send();
                         }
                     })
                     ->successNotificationTitle(__('Backup imported'))
