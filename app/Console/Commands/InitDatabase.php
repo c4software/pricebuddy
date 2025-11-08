@@ -84,9 +84,9 @@ class InitDatabase extends Command
     private function createDefaultUser(): void
     {
         // @phpstan-ignore-next-line
-        $email = env('APP_USER_EMAIL');
+        $email = env('APP_USER_EMAIL', 'admin@example.com');
         // @phpstan-ignore-next-line
-        $password = env('APP_USER_PASSWORD');
+        $password = env('APP_USER_PASSWORD', 'admin');
 
         if (!$email || !$password) {
             return;

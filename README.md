@@ -78,15 +78,6 @@ such as fetching prices and sending notifications.
 Most common settings are exposed in the application settings page. For more advanced
 settings you can edit the `.env` file in the root of the project.
 
-## Development
-
-This application is built using [Laravel](https://laravel.com) and [Filament](https://filamentphp.com/). 
-The development environment uses [Lando](https://lando.dev) to make it easier to 
-setup the development environment.
-
-Simply install lando, clone this repo, `cd pricebuddy` and run `lando start` to start 
-the development environment.
-
 ### Code standards and testing
 
 * Coding standards are enforced via [Laravel Pint](https://laravel.com/docs/11.x/pint)

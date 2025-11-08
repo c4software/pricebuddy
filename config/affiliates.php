@@ -6,7 +6,7 @@ return [
     | Globally disable or enable all affiliate links
     |--------------------------------------------------------------------------
     */
-    'enabled' => env('AFFILIATE_ENABLED', true),
+    'enabled' => env('AFFILIATE_ENABLED', false),
 
     /*
     |--------------------------------------------------------------------------
