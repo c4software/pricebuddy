@@ -188,7 +188,7 @@ class AutoCreateStoreTest extends TestCase
             ],
             'price' => [
                 'type' => 'selector',
-                'value' => '.a-price .a-offscreen',
+                'value' => '.a-box-inner .a-section .a-price .a-offscreen',
                 'data' => '35.00',
             ],
             'image' => [
@@ -201,7 +201,7 @@ class AutoCreateStoreTest extends TestCase
 
     protected function getHtml(string $name): string
     {
-        return file_get_contents(__DIR__.'/../../Fixtures/AutoCreateStore/'.$name.'.html');
+        return file_get_contents(__DIR__ . '/../../Fixtures/AutoCreateStore/' . $name . '.html');
     }
 
     protected function fakeResponse(string $name, string $domain = 'example.com*'): void

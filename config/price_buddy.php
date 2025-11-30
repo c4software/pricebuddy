@@ -44,7 +44,7 @@ return [
         'price' => [
             'selector' => [
                 'meta[property="product:price:amount"]|content',
-                '.a-price .a-offscreen',            // Amazon
+                '.a-box-inner .a-section .a-price .a-offscreen',            // Amazon
                 '[itemProp="price"]|content',
                 '.price',
                 '.product-price, .product-price-value',
