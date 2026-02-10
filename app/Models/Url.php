@@ -220,11 +220,10 @@ class Url extends Model
         }
 
         if (is_null($price) || $price === '') {
-            $price = data_get($this->scrape(), 'price');
-        }
-
-        if (is_null($price) || $price === '') {
-            return null;
+            $scrapedPrice = data_get($this->scrape(), 'price');
+            $price = (is_null($scrapedPrice) || $scrapedPrice === '')
+                ? CurrencyHelper::OUT_OF_STOCK_PRICE
+                : $scrapedPrice;
         }
 
         // Only create a new price entry if the price changed OR the date is different

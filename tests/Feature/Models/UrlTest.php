@@ -89,7 +89,7 @@ class UrlTest extends TestCase
         $this->assertEquals(100.0, $priceModel->price);
     }
 
-    public function test_update_price_with_invalid_data()
+    public function test_update_price_sets_out_of_stock_on_scrape_error()
     {
         $product = Product::factory()->create();
         $url = Url::factory()->createOne([
@@ -102,7 +102,8 @@ class UrlTest extends TestCase
 
         $priceModel = $url->updatePrice();
 
-        $this->assertNull($priceModel);
+        $this->assertInstanceOf(Price::class, $priceModel);
+        $this->assertEquals(CurrencyHelper::OUT_OF_STOCK_PRICE, $priceModel->price);
     }
 
     public function test_product_name_short_returns_correct_value()
