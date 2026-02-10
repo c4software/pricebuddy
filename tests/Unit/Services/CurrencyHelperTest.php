@@ -134,6 +134,26 @@ class CurrencyHelperTest extends TestCase
         $this->assertEquals(0.0, CurrencyHelper::toFloat('abc'));
     }
 
+
+    public function test_is_out_of_stock_detects_sentinel_price()
+    {
+        $this->assertTrue(CurrencyHelper::isOutOfStock(-1));
+        $this->assertTrue(CurrencyHelper::isOutOfStock('-1.00'));
+        $this->assertFalse(CurrencyHelper::isOutOfStock(0));
+    }
+
+
+    public function test_get_out_of_stock_label_uses_translation()
+    {
+        $this->assertEquals(__('product.out_of_stock'), CurrencyHelper::getOutOfStockLabel());
+    }
+
+    public function test_to_display_string_returns_hors_stock_for_unavailable_product()
+    {
+        $this->assertEquals(__('product.out_of_stock'), CurrencyHelper::toDisplayString(-1, locale: 'fr_FR', iso: 'EUR'));
+        $this->assertEquals('$10.00', CurrencyHelper::toDisplayString(10, locale: 'en_US', iso: 'USD'));
+    }
+
     public function test_to_string_formats_float_value()
     {
         $this->assertEquals('$10.50', CurrencyHelper::toString(10.5));

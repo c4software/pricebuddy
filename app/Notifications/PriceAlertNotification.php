@@ -15,7 +15,6 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 use NotificationChannels\Pushover\PushoverMessage;
-use function PHPUnit\Framework\isEmpty;
 
 class PriceAlertNotification extends Notification
 {
@@ -127,18 +126,46 @@ class PriceAlertNotification extends Notification
             $min = data_get($this->product?->price_aggregates, 'min', null);
             $max = data_get($this->product?->price_aggregates, 'max', null);
 
-            $hasChanges = $this->url->prices()->count() > 1;
-            $newPrice = $this->url->latest_price_formatted;
-            $previousPrice = $this->url->previous_price_formatted;
+            $prices = $this->url->prices()->orderByDesc('created_at')->take(2)->get();
+            $hasChanges = $prices->count() > 1;
 
-            if ($newPrice > $previousPrice) {
+            $latestPrice = (float) ($prices->first()?->price ?? 0);
+            $previousPriceValue = $prices->get(1)?->price;
+            $previousPrice = is_null($previousPriceValue)
+                ? null
+                : CurrencyHelper::toDisplayString(
+                    $previousPriceValue,
+                    locale: $this->url->store?->locale,
+                    iso: $this->url->store?->currency
+                );
+
+            $newPrice = CurrencyHelper::toDisplayString(
+                $latestPrice,
+                locale: $this->url->store?->locale,
+                iso: $this->url->store?->currency
+            );
+
+            if (is_null($previousPriceValue)) {
+                $evolution = "➖";
+            } elseif ($latestPrice > (float) $previousPriceValue) {
                 $evolution = "📈";
-            } elseif ($newPrice < $previousPrice) {
+            } elseif ($latestPrice < (float) $previousPriceValue) {
                 $evolution = "📉";
             } else {
                 $evolution = "➖";
             }
+
             $url = $this->getUrl();
+            $isLatestOutOfStock = CurrencyHelper::isOutOfStock($latestPrice);
+            $wasPreviousOutOfStock = ! is_null($previousPriceValue) && CurrencyHelper::isOutOfStock($previousPriceValue);
+
+            if ($hasChanges && $isLatestOutOfStock && ! $wasPreviousOutOfStock) {
+                return __('notifications.product_unavailable');
+            }
+
+            if ($hasChanges && ! $isLatestOutOfStock && $wasPreviousOutOfStock) {
+                return __('notifications.product_available_again', ['price' => $newPrice]);
+            }
 
             // Get The notification text from settings
             $notificationTextTemplate = AppSettings::new()->notification_text;
@@ -151,15 +178,23 @@ class PriceAlertNotification extends Notification
                 // Replace placeholders in the template
                 return str_replace(
                     ['{evolution}', '{previousPrice}', '{newPrice}', '{min}', '{max}', '{url}'],
-                    [$evolution, $previousPrice, $newPrice, $min ?? 'N/A', $max ?? 'N/A', $url],
+                    [
+                        $evolution,
+                        $previousPrice,
+                        $newPrice,
+                        is_null($min) ? 'N/A' : CurrencyHelper::toDisplayString($min, locale: $this->url->store?->locale, iso: $this->url->store?->currency),
+                        is_null($max) ? 'N/A' : CurrencyHelper::toDisplayString($max, locale: $this->url->store?->locale, iso: $this->url->store?->currency),
+                        $url,
+                    ],
                     $notificationTextTemplate
                 );
-            } else {
-                // Fallback, should not really happen
-                return "Price updated. {$url}";
             }
+
+            // Fallback, should not really happen
+            return "Price updated. {$url}";
         } catch (\Exception $e) {
             logger()->error('Error generating price alert notification summary: ' . $e->getMessage(), ['exception' => $e]);
+
             return "Price updated. {$this->getUrl()}";
         }
     }
