@@ -121,7 +121,7 @@ class CreateViaSearchTable extends BaseWidget
                         ->label('Price')
                         ->weight(FontWeight::Bold)
                         ->formatStateUsing(fn (?float $state, UrlResearch $record): HtmlString => new HtmlString(
-                            empty($state) ? 'No price' : CurrencyHelper::toString($state, locale: $record->store?->locale, iso: $record->store?->currency)
+                            empty($state) ? 'No price' : CurrencyHelper::toDisplayString($state, locale: $record->store?->locale, iso: $record->store?->currency)
                         ))
                         ->extraAttributes(['class' => 'md:text-right md:justify-end']),
 

@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Notifications;
 
-use App\Models\Price;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Url;
@@ -55,6 +54,56 @@ class PriceAlertNotificationTest extends TestCase
         $this->assertEquals('Price drop: Test Product ($99.99)', $gotifyMessage->title);
         $this->assertStringContainsString('Test Store has had a price drop for Test Product - $99.99', $gotifyMessage->content);
         $this->assertEquals('https://example.com/product', $gotifyMessage->url);
+    }
+
+
+    public function test_notification_summary_for_unavailable_product_state()
+    {
+        app()->setLocale('fr');
+        $user = User::factory()->create();
+
+        [$store, $product, $url] = $this->createStoreProductAndPrice(
+            'Test Store',
+            'Test Product',
+            $user->getKey(),
+            99.99
+        );
+
+        $url->prices()->create([
+            'price' => -1,
+            'store_id' => $store->id,
+            'created_at' => now()->addMinute(),
+        ]);
+
+        $notification = new PriceAlertNotification($url);
+        $gotifyMessage = $notification->toGotify($user);
+
+        $this->assertSame(__('notifications.product_unavailable'), $gotifyMessage->content);
+    }
+
+    public function test_notification_summary_for_available_again_state()
+    {
+        app()->setLocale('fr');
+        $user = User::factory()->create();
+
+        [$store, $product, $url] = $this->createStoreProductAndPrice(
+            'Test Store',
+            'Test Product',
+            $user->getKey(),
+            -1
+        );
+
+        $url->prices()->create([
+            'price' => 89.99,
+            'store_id' => $store->id,
+            'created_at' => now()->addMinute(),
+        ]);
+
+        $notification = new PriceAlertNotification($url);
+        $gotifyMessage = $notification->toGotify($user);
+
+        $this->assertStringContainsString('Produit à nouveau disponible +', $gotifyMessage->content);
+        $this->assertStringContainsString('$89.99', $gotifyMessage->content);
     }
 
     protected function createStoreProductAndPrice(string $storeName, string $productTitle, int $userId, float $price): array

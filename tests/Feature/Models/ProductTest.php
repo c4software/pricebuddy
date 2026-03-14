@@ -286,6 +286,21 @@ class ProductTest extends TestCase
         $this->assertEquals(20.0, $history[$url->id]->last());
     }
 
+
+    public function test_price_history_excludes_negative_prices()
+    {
+        $product = $this->createOneProductWithUrlAndPrices(prices: [20, -1, 20]);
+        $url = $product->urls->first();
+
+        $history = $product->getPriceHistory();
+        $historyPerHour = $product->getPriceHistoryPerHour();
+
+        $this->assertCount(1, $history);
+        $this->assertArrayHasKey($url->id, $history);
+        $this->assertNotContains(-1.0, $history[$url->id]->values()->toArray());
+        $this->assertNotContains(-1.0, $historyPerHour[$url->id]->values()->toArray());
+    }
+
     public function test_price_cache_dto()
     {
         $product = Product::factory()->addUrlsAndPrices(3, 3)->createOne();

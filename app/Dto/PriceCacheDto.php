@@ -103,7 +103,7 @@ class PriceCacheDto
 
     public function getPriceFormatted(): string
     {
-        return CurrencyHelper::toString($this->getPrice(), locale: $this->locale, iso: $this->currency);
+        return CurrencyHelper::toDisplayString($this->getPrice(), locale: $this->locale, iso: $this->currency);
     }
 
     public function getHistory(int $count = 365): Collection

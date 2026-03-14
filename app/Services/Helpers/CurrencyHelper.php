@@ -18,6 +18,10 @@ use Symfony\Component\Intl\Currencies;
  */
 class CurrencyHelper
 {
+    public const float OUT_OF_STOCK_PRICE = -1.0;
+
+    public const string OUT_OF_STOCK_TRANSLATION_KEY = 'product.out_of_stock';
+
     public static function getLocale(): string
     {
         return SettingsHelper::getSetting(
@@ -101,5 +105,24 @@ class CurrencyHelper
             in: ($iso ?? self::getCurrency()),
             locale: ($locale ?? self::getLocale())
         );
+    }
+
+    public static function isOutOfStock(mixed $value): bool
+    {
+        return round((float) $value, 2) === self::OUT_OF_STOCK_PRICE;
+    }
+
+    public static function getOutOfStockLabel(): string
+    {
+        return __(self::OUT_OF_STOCK_TRANSLATION_KEY);
+    }
+
+    public static function toDisplayString(mixed $value, int $maxPrecision = 2, ?string $locale = null, ?string $iso = null): string
+    {
+        if (self::isOutOfStock($value)) {
+            return self::getOutOfStockLabel();
+        }
+
+        return self::toString($value, $maxPrecision, $locale, $iso);
     }
 }

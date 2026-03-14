@@ -113,7 +113,7 @@ class Url extends Model
     protected function latestPriceFormatted(): Attribute
     {
         return Attribute::make(
-            get: fn() => CurrencyHelper::toString(
+            get: fn() => CurrencyHelper::toDisplayString(
                 $this->latestPrice()->first()->price ?? 0,
                 locale: $this->store?->locale,
                 iso: $this->store?->currency
@@ -131,7 +131,7 @@ class Url extends Model
                     return null;
                 }
 
-                return CurrencyHelper::toString(
+                return CurrencyHelper::toDisplayString(
                     $prices->last()->price ?? 0,
                     locale: $this->store?->locale,
                     iso: $this->store?->currency
@@ -220,11 +220,10 @@ class Url extends Model
         }
 
         if (is_null($price) || $price === '') {
-            $price = data_get($this->scrape(), 'price');
-        }
-
-        if (is_null($price) || $price === '') {
-            return null;
+            $scrapedPrice = data_get($this->scrape(), 'price');
+            $price = (is_null($scrapedPrice) || $scrapedPrice === '')
+                ? CurrencyHelper::OUT_OF_STOCK_PRICE
+                : $scrapedPrice;
         }
 
         // Only create a new price entry if the price changed OR the date is different
