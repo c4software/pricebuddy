@@ -106,10 +106,10 @@ class Store extends Model
         $first = array_shift($domains);
 
         return $query->where(function (Builder $subQuery) use ($first, $domains) {
-            $subQuery->whereJsonContains('domains', ['domain' => $first]);
+            $subQuery->whereLike('domains', '%"domain":"'.$first.'"%');
 
             foreach ($domains as $domain) {
-                $subQuery->orWhereJsonContains('domains', ['domain' => $domain]);
+                $subQuery->orWhereLike('domains', '%"domain":"'.$domain.'"%');
             }
         });
     }
