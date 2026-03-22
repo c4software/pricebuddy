@@ -1,8 +1,22 @@
 @php
+    use App\Services\Helpers\CurrencyHelper;
     $product = $product ?? $getRecord();
+    $latestPrice = $product->getPriceCache()->first();
+    $isOutOfStock = $latestPrice && CurrencyHelper::isOutOfStock($latestPrice->getPrice());
 @endphp
-@if (! $product->is_last_scrape_successful || $product->is_notified_price)
+@if (! $product->is_last_scrape_successful || $product->is_notified_price || $isOutOfStock)
     <div {{ $attributes }}>
+        @if ($isOutOfStock)
+            <div class="mt-1">
+                @include('components.icon-badge', [
+                    'hoverText' => __('product.out_of_stock'),
+                    'label' => __('product.out_of_stock'),
+                    'color' => 'warning',
+                    'icon' => 'heroicon-m-archive-box-x-mark'
+                ])
+            </div>
+        @endif
+
         @if (! $product->is_last_scrape_successful)
             <div class="mt-1">
                 @include('components.icon-badge', [

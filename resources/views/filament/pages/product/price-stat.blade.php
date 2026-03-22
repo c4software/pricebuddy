@@ -2,6 +2,7 @@
     use Filament\Support\Enums\IconPosition;
     use Filament\Support\Facades\FilamentView;
     use function Filament\Support\get_color_css_variables;
+    use App\Services\Helpers\CurrencyHelper;
 
     /** @var \App\Models\Product $product */
     /** @var \App\Dto\PriceCacheDto $priceCache */
@@ -12,6 +13,7 @@
     $url = $getUrl();
     $tag = $url ? 'a' : 'div';
     $dataChecksum = $generateDataChecksum();
+    $isOutOfStock = CurrencyHelper::isOutOfStock($priceCache->getPrice());
 
     $descriptionIconClasses = \Illuminate\Support\Arr::toCssClasses([
         'fi-wi-stats-overview-stat-description-trend-icon h-4 w-4 opacity-90 inline-block ml-2',
@@ -102,6 +104,17 @@
             <div class="mb-2 text-custom-500 dark:text-custom-400 flex gap-2 items-center text-xs">
                 {{__('Last price change ' . $priceCache->getFormattedLastChangeSinceLastScrape())}}
             </div>
+
+            @if ($isOutOfStock)
+                <div>
+                    @include('components.icon-badge', [
+                        'hoverText' => __('product.out_of_stock'),
+                        'label' => __('product.out_of_stock'),
+                        'color' => 'warning',
+                        'icon' => 'heroicon-m-archive-box-x-mark'
+                    ])
+                </div>
+            @endif
 
             @if ($priceCache->matchesNotification($product))
                 <div>
