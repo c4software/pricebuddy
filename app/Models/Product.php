@@ -333,26 +333,43 @@ class Product extends Model
     public function buildPriceCache(): Collection
     {
         $history = $this->getPriceHistory();
-        $urls = Url::findMany($history->keys());
+        
+        // Get all URLs for this product (not just those with valid price history)
+        // Eager load the latest price to avoid N+1 queries
+        $urls = $this->urls()->with(['store', 'latestPrice'])->get();
 
         return $urls
-            ->map(function ($url) use ($history): array {
+            ->map(function ($url) use ($history): ?array {
                 /** @var Url $url */
                 /** @var Collection $urlHistory */
                 $urlHistory = $history->get($url->getKey());
                 /** @var ?Store $store */
                 $store = $url->store;
 
-                // Get last scraped price.
+                // Get last scraped price (includes out-of-stock prices).
+                // Use eager-loaded latestPrice relation if available
                 /** @var ?Price $lastScrapedPrice */
-                $lastScrapedPrice = $url->prices()->latest('id')->first();
+                $lastScrapedPrice = $url->relationLoaded('latestPrice') 
+                    ? $url->latestPrice->first()
+                    : $url->prices()->latest('id')->first();
                 $lastScrapedTimestamp = $lastScrapedPrice?->created_at;
+                
+                // If no price at all, skip this URL
+                if (!$lastScrapedPrice) {
+                    return null;
+                }
+                
+                // Use the last scraped price (may be -1.0 for out of stock)
+                $currentPrice = $lastScrapedPrice->price;
+                
+                // Use valid price history for trend calculation, fallback to current price if empty
+                $historyForTrend = $urlHistory && $urlHistory->isNotEmpty() ? $urlHistory : collect([$currentPrice]);
 
                 // Build trend, current price vs average price.
                 $trend = Trend::calculateTrend(
-                    $urlHistory->last(),
-                    $urlHistory->values()->avg(),
-                    $urlHistory->values()->min(),
+                    $currentPrice,
+                    $historyForTrend->values()->avg(),
+                    $historyForTrend->values()->min(),
                 );
 
                 // Build output suitable for dto.
@@ -362,14 +379,40 @@ class Product extends Model
                     'url_id' => $url->getKey(),
                     'url' => $url->buy_url,
                     'trend' => $trend,
-                    'price' => $urlHistory->last(),
-                    'history' => $urlHistory->toArray(),
+                    'price' => $currentPrice,
+                    'history' => $urlHistory ? $urlHistory->toArray() : [],
                     'last_scrape' => $lastScrapedTimestamp?->toDateTimeString(),
                     'locale' => $store->locale,
                     'currency' => $store->currency,
                 ];
             })
-            ->sortBy('price')
+            ->filter() // Remove null entries
+            ->sort(function ($a, $b) {
+                // Out-of-stock prices (-1.0) should be sorted last
+                $priceA = $a['price'];
+                $priceB = $b['price'];
+                
+                $isAOutOfStock = CurrencyHelper::isOutOfStock($priceA);
+                $isBOutOfStock = CurrencyHelper::isOutOfStock($priceB);
+                
+                // Both out of stock, keep original order
+                if ($isAOutOfStock && $isBOutOfStock) {
+                    return 0;
+                }
+                
+                // A is out of stock, B is not - B comes first
+                if ($isAOutOfStock) {
+                    return 1;
+                }
+                
+                // B is out of stock, A is not - A comes first
+                if ($isBOutOfStock) {
+                    return -1;
+                }
+                
+                // Both have valid prices, sort by price ascending
+                return $priceA <=> $priceB;
+            })
             ->values();
     }
 

@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\Url;
 use App\Models\User;
+use App\Services\Helpers\CurrencyHelper;
 use App\Services\Helpers\SettingsHelper;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -346,6 +347,116 @@ class ProductTest extends TestCase
         $this->assertFalse($product->shouldNotifyOnPrice(new Price(['price' => 27.01])));
         $this->assertTrue($product->shouldNotifyOnPrice(new Price(['price' => 27])));
         $this->assertTrue($product->shouldNotifyOnPrice(new Price(['price' => 5])));
+    }
+
+    public function test_build_price_cache_includes_out_of_stock_prices()
+    {
+        Carbon::setTestNow(Carbon::create(2025, 1, 10));
+        
+        // Create product with mix of valid and out-of-stock prices
+        $product = $this->createOneProductWithUrlAndPrices(prices: [20.0, 30.0]);
+        
+        // Add another URL with out-of-stock price
+        $outOfStockUrl = Url::factory()->createOne([
+            'product_id' => $product->getKey(),
+            'url' => 'https://example-oos.com',
+        ]);
+        Price::create([
+            'url_id' => $outOfStockUrl->id,
+            'price' => CurrencyHelper::OUT_OF_STOCK_PRICE,
+        ]);
+        
+        $priceCache = $product->buildPriceCache();
+        
+        // Should have 2 entries (one valid, one out-of-stock)
+        $this->assertCount(2, $priceCache);
+        
+        // First should be the valid price (sorted before out-of-stock)
+        $this->assertEquals(30.0, $priceCache->first()['price']);
+        
+        // Last should be out-of-stock
+        $this->assertEquals(CurrencyHelper::OUT_OF_STOCK_PRICE, $priceCache->last()['price']);
+    }
+    
+    public function test_build_price_cache_sorts_out_of_stock_last()
+    {
+        Carbon::setTestNow(Carbon::create(2025, 1, 10));
+        
+        $product = Product::factory()->create();
+        
+        // Create URLs with different prices including out-of-stock
+        $url1 = Url::factory()->createOne(['product_id' => $product->id, 'url' => 'https://store1.com']);
+        Price::create(['url_id' => $url1->id, 'price' => 29.99]);
+        
+        $url2 = Url::factory()->createOne(['product_id' => $product->id, 'url' => 'https://store2.com']);
+        Price::create(['url_id' => $url2->id, 'price' => -1.0]); // Out of stock
+        
+        $url3 = Url::factory()->createOne(['product_id' => $product->id, 'url' => 'https://store3.com']);
+        Price::create(['url_id' => $url3->id, 'price' => 25.50]);
+        
+        $url4 = Url::factory()->createOne(['product_id' => $product->id, 'url' => 'https://store4.com']);
+        Price::create(['url_id' => $url4->id, 'price' => -1.0]); // Out of stock
+        
+        $priceCache = $product->buildPriceCache();
+        
+        $prices = $priceCache->pluck('price')->toArray();
+        
+        // Should have all 4 entries
+        $this->assertCount(4, $prices);
+        
+        // Valid prices should come first, sorted ascending
+        $this->assertEquals(25.50, $prices[0]);
+        $this->assertEquals(29.99, $prices[1]);
+        
+        // Out-of-stock prices should be last
+        $this->assertEquals(-1.0, $prices[2]);
+        $this->assertEquals(-1.0, $prices[3]);
+    }
+    
+    public function test_build_price_cache_when_all_out_of_stock()
+    {
+        Carbon::setTestNow(Carbon::create(2025, 1, 10));
+        
+        $product = Product::factory()->create();
+        
+        // Create URLs all with out-of-stock prices
+        $url1 = Url::factory()->createOne(['product_id' => $product->id, 'url' => 'https://store1.com']);
+        Price::create(['url_id' => $url1->id, 'price' => -1.0]);
+        
+        $url2 = Url::factory()->createOne(['product_id' => $product->id, 'url' => 'https://store2.com']);
+        Price::create(['url_id' => $url2->id, 'price' => -1.0]);
+        
+        $priceCache = $product->buildPriceCache();
+        
+        // Should have both entries
+        $this->assertCount(2, $priceCache);
+        
+        // All should be out-of-stock
+        foreach ($priceCache as $cache) {
+            $this->assertEquals(-1.0, $cache['price']);
+        }
+        
+        // Update and check current_price
+        $product->updatePriceCache();
+        $this->assertEquals(-1.0, $product->current_price);
+    }
+    
+    public function test_get_price_cache_with_out_of_stock()
+    {
+        $product = Product::factory()->create(['price_cache' => [
+            ['price' => 25.50, 'history' => [], 'store_name' => 'Store A'],
+            ['price' => -1.0, 'history' => [], 'store_name' => 'Store B'],
+            ['price' => 30.00, 'history' => [], 'store_name' => 'Store C'],
+        ]]);
+        
+        $priceCache = $product->getPriceCache();
+        
+        // Should be sorted with out-of-stock last
+        $this->assertEquals(25.50, $priceCache->first()->getPrice());
+        $this->assertEquals(-1.0, $priceCache->last()->getPrice());
+        
+        // Check that out-of-stock is detected
+        $this->assertTrue(CurrencyHelper::isOutOfStock($priceCache->last()->getPrice()));
     }
 
     protected function createOneProductWithUrlAndPrices(string $url = self::DEFAULT_URL, array $prices = [10, 15, 20], array $attrs = []): Product
