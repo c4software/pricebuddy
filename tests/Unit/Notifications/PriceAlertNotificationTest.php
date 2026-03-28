@@ -106,6 +106,48 @@ class PriceAlertNotificationTest extends TestCase
         $this->assertStringContainsString('$89.99', $gotifyMessage->content);
     }
 
+    public function test_notification_displays_correct_min_max_with_empty_history()
+    {
+        $user = User::factory()->create();
+
+        [$store, $product, $url] = $this->createStoreProductAndPrice(
+            'Test Store',
+            'Test Product',
+            $user->getKey(),
+            50.00
+        );
+
+        // Simulate empty history by setting price_cache with empty history arrays
+        $product->update([
+            'price_cache' => [
+                [
+                    'price' => 50.00,
+                    'history' => [],
+                    'store_name' => 'Test Store',
+                    'store_id' => $store->id,
+                    'url_id' => $url->id,
+                ],
+            ],
+        ]);
+
+        // Create a second price to trigger notification
+        $url->prices()->create([
+            'price' => 45.00,
+            'store_id' => $store->id,
+            'created_at' => now()->addMinute(),
+        ]);
+
+        $notification = new PriceAlertNotification($url);
+        $summary = $notification->toArray($user);
+
+        // Verify that min/max are not displayed as $0.00
+        $gotifyMessage = $notification->toGotify($user);
+        $this->assertStringNotContainsString('$0.00', $gotifyMessage->content);
+
+        // The content should contain either valid prices or N/A, but not $0.00
+        $this->assertMatchesRegularExpression('/\$\d+\.\d{2}/', $gotifyMessage->content);
+    }
+
     protected function createStoreProductAndPrice(string $storeName, string $productTitle, int $userId, float $price): array
     {
         $store = Store::factory()->create([

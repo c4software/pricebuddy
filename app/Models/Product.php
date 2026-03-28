@@ -319,12 +319,23 @@ class Product extends Model
         $cache = $this->getPriceCache();
 
         if ($urlId) {
-            $cache->filter(fn(PriceCacheDto $price) => $price->getUrlId() === $urlId);
+            $cache = $cache->filter(fn(PriceCacheDto $price) => $price->getUrlId() === $urlId);
         }
 
-        return round($cache->map(fn(PriceCacheDto $price) => $price->getHistory()->values()->toArray())
-            ->flatten()
-            ->{$method}(), 2);
+        $allPrices = $cache->map(fn(PriceCacheDto $price) => $price->getHistory()->values()->toArray())
+            ->flatten();
+
+        if ($allPrices->isEmpty()) {
+            $allPrices = $cache
+                ->map(fn(PriceCacheDto $price) => $price->getPrice())
+                ->filter(fn($price) => !CurrencyHelper::isOutOfStock($price));
+        }
+
+        if ($allPrices->isEmpty()) {
+            return 0;
+        }
+
+        return round($allPrices->{$method}(), 2);
     }
 
     /**

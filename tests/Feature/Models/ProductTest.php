@@ -179,6 +179,63 @@ class ProductTest extends TestCase
         $this->assertEquals(5, $product->getPriceCacheAggregate('min'));
     }
 
+    public function test_price_aggregates_uses_current_prices_when_history_is_empty()
+    {
+        $product = Product::factory()->create([
+            'price_cache' => [
+                ['price' => 20.00, 'history' => [], 'store_name' => 'Store A'],
+                ['price' => 10.00, 'history' => [], 'store_name' => 'Store B'],
+                ['price' => 30.00, 'history' => [], 'store_name' => 'Store C'],
+            ],
+        ]);
+
+        $this->assertEquals(10.00, $product->getPriceCacheAggregate('min'));
+        $this->assertEquals(30.00, $product->getPriceCacheAggregate('max'));
+        $this->assertEquals(20.00, $product->getPriceCacheAggregate('avg'));
+    }
+
+    public function test_price_aggregates_excludes_out_of_stock_prices()
+    {
+        $product = Product::factory()->create([
+            'price_cache' => [
+                ['price' => 25.50, 'history' => [], 'store_name' => 'Store A'],
+                ['price' => -1.0, 'history' => [], 'store_name' => 'Store B'],
+                ['price' => 30.00, 'history' => [], 'store_name' => 'Store C'],
+            ],
+        ]);
+
+        $this->assertEquals(25.50, $product->getPriceCacheAggregate('min'));
+        $this->assertEquals(30.00, $product->getPriceCacheAggregate('max'));
+        $this->assertEquals(27.75, $product->getPriceCacheAggregate('avg'));
+    }
+
+    public function test_price_aggregates_prefers_history_over_current_prices()
+    {
+        $product = Product::factory()->create([
+            'price_cache' => [
+                ['price' => 50.00, 'history' => [10, 20, 30], 'store_name' => 'Store A'],
+                ['price' => 100.00, 'history' => [], 'store_name' => 'Store B'],
+            ],
+        ]);
+
+        $this->assertEquals(10.00, $product->getPriceCacheAggregate('min'));
+        $this->assertEquals(100.00, $product->getPriceCacheAggregate('max'));
+    }
+
+    public function test_price_aggregates_returns_zero_when_all_out_of_stock()
+    {
+        $product = Product::factory()->create([
+            'price_cache' => [
+                ['price' => -1.0, 'history' => [], 'store_name' => 'Store A'],
+                ['price' => -1.0, 'history' => [], 'store_name' => 'Store B'],
+            ],
+        ]);
+
+        $this->assertEquals(0, $product->getPriceCacheAggregate('min'));
+        $this->assertEquals(0, $product->getPriceCacheAggregate('max'));
+        $this->assertEquals(0, $product->getPriceCacheAggregate('avg'));
+    }
+
     public function test_build_price_cache_creates_correct_structure()
     {
         Carbon::setTestNow(Carbon::create(2025, 1, 10));

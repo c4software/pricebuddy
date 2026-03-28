@@ -123,8 +123,11 @@ class PriceAlertNotification extends Notification
     protected function getSummary(): string
     {
         try {
-            $min = data_get($this->product?->price_aggregates, 'min', null);
-            $max = data_get($this->product?->price_aggregates, 'max', null);
+            $minValue = $this->product?->getPriceCacheAggregate('min');
+            $maxValue = $this->product?->getPriceCacheAggregate('max');
+            
+            $min = ($minValue && $minValue > 0) ? $minValue : null;
+            $max = ($maxValue && $maxValue > 0) ? $maxValue : null;
 
             $prices = $this->url->prices()->orderByDesc('created_at')->take(2)->get();
             $hasChanges = $prices->count() > 1;
