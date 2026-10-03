@@ -178,6 +178,11 @@ class Product extends Model
     {
         return Attribute::make(
             get: function (): string {
+                // A product without any price yet has no trend.
+                if (is_null($this->current_price)) {
+                    return Trend::None->value;
+                }
+
                 return Trend::calculateTrend(
                     $this->current_price,
                     $this->getPriceCacheAggregate('avg'),

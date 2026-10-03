@@ -63,6 +63,24 @@ class UrlTest extends TestCase
         $this->assertEquals($scrapeData['title'], $urlModel->product->title);
     }
 
+    public function test_create_from_url_leaves_nothing_behind_when_price_creation_fails()
+    {
+        $this->actingAs($this->user);
+        $this->mockScrape(100, 'Example Product');
+
+        Price::creating(fn () => throw new \RuntimeException('Price creation failed'));
+
+        try {
+            Url::createFromUrl(self::TEST_URL);
+            $this->fail('Expected exception was not thrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Price creation failed', $e->getMessage());
+        }
+
+        $this->assertSame(0, Product::count());
+        $this->assertSame(0, Url::count());
+    }
+
     public function test_create_from_url_with_invalid_data()
     {
         $this->mockScrape('', '');

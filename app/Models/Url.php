@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -180,31 +181,35 @@ class Url extends Model
             return false;
         }
 
-        if (is_null($productId)) {
-            if (! $userId) {
-                throw new AuthorizationException('User is required to create a product.');
-            }
-
-            $image = data_get($scrape, 'image');
-
-            $productId = Product::create([
-                'title' => Str::limit(data_get($scrape, 'title'), ScrapeUrl::MAX_STR_LENGTH),
-                'image' => strlen($image) < ScrapeUrl::MAX_STR_LENGTH ? $image : null,
-                'user_id' => $userId,
-                'favourite' => true,
-            ])->id;
+        if (is_null($productId) && ! $userId) {
+            throw new AuthorizationException('User is required to create a product.');
         }
 
-        /** @var Url $urlModel */
-        $urlModel = self::create([
-            'url' => $url,
-            'store_id' => $store->getKey(),
-            'product_id' => $productId,
-        ]);
+        // Product, url and initial price are created together so a failure
+        // can't leave a product behind without a price.
+        return DB::transaction(function () use ($url, $scrape, $store, $productId, $userId): Url {
+            if (is_null($productId)) {
+                $image = data_get($scrape, 'image');
 
-        $urlModel->updatePrice(data_get($scrape, 'price'));
+                $productId = Product::create([
+                    'title' => Str::limit(data_get($scrape, 'title'), ScrapeUrl::MAX_STR_LENGTH),
+                    'image' => strlen($image) < ScrapeUrl::MAX_STR_LENGTH ? $image : null,
+                    'user_id' => $userId,
+                    'favourite' => true,
+                ])->id;
+            }
 
-        return $urlModel;
+            /** @var Url $urlModel */
+            $urlModel = self::create([
+                'url' => $url,
+                'store_id' => $store->getKey(),
+                'product_id' => $productId,
+            ]);
+
+            $urlModel->updatePrice(data_get($scrape, 'price'));
+
+            return $urlModel;
+        });
     }
 
     public function updatePrice(int|float|string|null $price = null): Price|Model|null

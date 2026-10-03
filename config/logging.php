@@ -56,7 +56,8 @@ return [
         'stack' => [
             'driver' => 'stack',
             'channels' => array_merge(explode(',', env('LOG_STACK', 'single')), ['db', 'stderr']),
-            'ignore_exceptions' => false,
+            // A channel that can't be written to (e.g. a closed stderr) must not break the request.
+            'ignore_exceptions' => true,
         ],
 
         'single' => [

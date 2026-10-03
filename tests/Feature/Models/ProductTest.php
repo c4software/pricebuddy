@@ -108,6 +108,14 @@ class ProductTest extends TestCase
         $this->assertSame(Trend::None->value, $product->trend);
     }
 
+    public function test_price_trend_is_none_for_product_without_price()
+    {
+        $product = Product::factory()->create(['current_price' => null, 'price_cache' => []]);
+
+        $this->assertSame(Trend::None->value, $product->trend);
+        $this->assertFalse($product->has_history);
+    }
+
     public function test_price_aggregates_for_lowest_priced_store()
     {
         SettingsHelper::setSetting('default_locale_settings', ['locale' => 'en', 'currency' => 'USD']);
