@@ -30,6 +30,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           file: ./docker/php.dockerfile
+          # Always the current php image, so a run picks up PHP security fixes
+          pull: true
+          no-cache: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
