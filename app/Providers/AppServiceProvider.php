@@ -15,6 +15,7 @@ use Filament\View\PanelsRenderHook;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,6 +31,20 @@ class AppServiceProvider extends ServiceProvider
         $this->registerFilamentSettings();
         $this->setConfigFromAppSettings();
         $this->registerAbout();
+        $this->releaseMemoryAfterJobs();
+    }
+
+    /**
+     * Le worker de file tourne pendant des semaines. Une page de plus de 2 Mo
+     * téléchargée par le scraper est mise en mémoire tampon par Guzzle dans un
+     * fichier /tmp/php*, que seul le ramasse-miettes des cycles libère : sans
+     * lui, chaque relevé de prix laissait ses fichiers dans /tmp. On le force
+     * après chaque tâche.
+     */
+    protected function releaseMemoryAfterJobs(): void
+    {
+        Queue::after(fn () => gc_collect_cycles());
+        Queue::failing(fn () => gc_collect_cycles());
     }
 
     protected function registerPolicies(): void

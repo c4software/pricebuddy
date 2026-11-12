@@ -9,6 +9,10 @@ fi
 # Debugging
 printenv
 
+# Fichiers tampons laissés par les processus PHP d'un démarrage précédent
+# (conteneur redémarré sans être recréé : /tmp est conservé).
+rm -f /tmp/php*
+
 # Ensure storage exists
 mkdir -p storage/framework/sessions \
     && mkdir -p storage/framework/views \
