@@ -5,7 +5,9 @@ FROM php:${PHP_VERSION}-apache-bookworm
 ENV EDITOR=nano
 WORKDIR /app
 
-RUN apt update && apt install -y \
+# apt upgrade: Debian security fixes (apache2 among them) reach the image
+# before the php image is rebuilt with them.
+RUN apt update && apt upgrade -y && apt install -y \
         cron \
         supervisor \
         nano \
